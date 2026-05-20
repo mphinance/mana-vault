@@ -1,0 +1,39 @@
+# MTG Portfolio Tracker — Project Rules
+
+## Architecture
+
+This is a vanilla JS + Vite dashboard that treats Magic: The Gathering cards like stocks.
+
+### Data Pipeline
+- `preprocess.py` — Streams through MTGJSON's AllPrices.json (1.2GB) in a single pass, extracts price history for cards in the ManaBox collection, computes technical indicators (EMA, SMA, RSI, Bollinger Bands), and outputs JSON files to `dashboard/public/data/`.
+- `update.py` — Downloads fresh MTGJSON data and re-runs the preprocessor. Use `--full` for 90-day history rebuild.
+- `scrape_events.py` — Playwright scraper for magic.gg schedule and MTGTop8 tournament data. Outputs `events.json`.
+
+### Dashboard (`dashboard/`)
+- **Single-page app** — Vanilla JS, no framework. All rendering in `main.js`.
+- **Charts** — [Lightweight Charts](https://github.com/nicehash/lightweight-charts) (TradingView fork). Portfolio area chart + per-card line charts with indicators.
+- **Navigation** — Tab-based via `data-view` attributes on nav buttons. `switchView()` handles lazy rendering. Cross-navigation (e.g., clicking a mover → chart) uses `pushHistory` for back-button support.
+- **Styling** — Custom dark theme in `style.css` with CSS variables. Glassmorphism, mono fonts for prices.
+
+### Key Data Files (generated, not committed)
+- `portfolio.json` — Portfolio summary, daily values, binder/rarity breakdowns
+- `cards.json` — Per-card summary (no history) for tables
+- `price_history.json` — Per-card price history + technicals (large, ~140MB)
+- `movers.json` — MTGStocks daily movers
+- `arbitrage.json` — Cross-vendor price gaps
+- `events.json` — Tournament schedule and metagame
+
+## Conventions
+
+- All prices are in USD unless specified
+- Card identification: Scryfall ID is the primary key in the frontend, MTGJSON UUID is used for price lookups
+- External links: Scryfall for cards, TCGPlayer/CardKingdom for prices, MTGStocks for movers
+- Link helpers: `scryfallLink()`, `tcgLink()`, `ckLink()`, `mtgstocksLink()`, `cardNameLink()`, `priceLink()`
+- Formatting: `fmt()` for currency, `fmtPct()` for percentages, `pnlClass()` for green/red styling
+
+## Tech Stack
+- Frontend: Vanilla JS + Vite
+- Charts: lightweight-charts
+- Data: Python 3 preprocessing scripts
+- Scraping: Playwright (Python)
+- Fonts: Inter + JetBrains Mono (Google Fonts)

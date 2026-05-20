@@ -1,0 +1,33 @@
+# Large data files
+AllPrices.json
+AllPrices.json.bz2
+AllPricesToday.json
+AllPricesToday.json.bz2
+AllPrintings.json.bz2
+AtomicCards.json.bz2
+AllDeckFiles.tar.bz2
+scryfall_to_mtgjson.json
+
+# Collection data (personal)
+ManaBox_Collection.csv
+chat.txt
+
+# Preprocessed dashboard data (generated)
+dashboard/public/data/
+
+# Node
+node_modules/
+dashboard/node_modules/
+dashboard/dist/
+
+# OS
+.DS_Store
+*.swp
+*.swo
+
+# Per-user vault data (generated)
+user_data/
+
+# Secrets
+.env*
+!.env.example

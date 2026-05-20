@@ -1,0 +1,17 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    container_name: mana-vault-api
+    ports:
+      - "8200:8200"
+    volumes:
+      # Shared price data (read-only)
+      - ./AllPrices.json:/app/AllPrices.json:ro
+      - ./scryfall_to_mtgjson.json:/app/scryfall_to_mtgjson.json:ro
+      # Per-user data (read-write, persisted)
+      - ./user_data:/app/user_data
+    environment:
+      - MANA_VAULT_BASE=/app
+    restart: unless-stopped

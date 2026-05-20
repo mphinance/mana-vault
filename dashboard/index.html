@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mana Vault — Card Prices Like Stocks</title>
+  <meta name="description" content="Track your Magic: The Gathering collection like a stock portfolio. Price charts, technical analysis, movers, and arbitrage detection." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <header id="header">
+      <div class="header-left">
+        <div class="logo">
+          <span class="logo-icon">🃏</span>
+          <span class="logo-text">Mana<span class="accent">Vault</span></span>
+        </div>
+        <span class="header-tag">ALPHA</span>
+      </div>
+      <nav id="main-nav">
+        <button class="nav-btn active" data-view="portfolio">Portfolio</button>
+        <button class="nav-btn" data-view="chart">Price Charts</button>
+        <button class="nav-btn" data-view="movers">Top Movers</button>
+        <button class="nav-btn" data-view="signals">Signals</button>
+        <button class="nav-btn" data-view="arbitrage">Arbitrage</button>
+        <button class="nav-btn" data-view="collection">Collection</button>
+      </nav>
+      <div class="header-right">
+        <div class="header-stat" id="header-value">
+          <span class="stat-label">Portfolio</span>
+          <span class="stat-value" id="header-total">—</span>
+        </div>
+        <div class="header-stat" id="header-pnl">
+          <span class="stat-label">P&L</span>
+          <span class="stat-value" id="header-pnl-value">—</span>
+        </div>
+        <div class="header-actions">
+          <button class="header-btn" id="btn-import" title="Import ManaBox CSV">
+            <span>📥</span> Import
+          </button>
+          <button class="header-btn secondary" id="btn-export" title="Export collection CSV" style="display:none">
+            <span>📤</span> Export
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Vault Info Bar -->
+    <div id="vault-bar" class="vault-bar" style="display:none">
+      <div class="vault-bar-inner">
+        <span class="vault-bar-icon">🔒</span>
+        <span class="vault-bar-name" id="vault-bar-name"></span>
+        <span class="vault-bar-meta" id="vault-bar-meta"></span>
+        <button class="vault-bar-btn" id="btn-copy-vault-url" title="Copy vault URL">📋 Copy Link</button>
+        <button class="vault-bar-btn" id="btn-close-vault" title="Back to demo">✕</button>
+      </div>
+    </div>
+
+    <!-- Portfolio View -->
+    <section id="view-portfolio" class="view active">
+      <div class="portfolio-grid">
+        <!-- KPI Cards -->
+        <div class="kpi-row">
+          <div class="kpi-card" id="kpi-current">
+            <div class="kpi-label">Current Value</div>
+            <div class="kpi-value">—</div>
+            <div class="kpi-sub">TCGPlayer Retail</div>
+          </div>
+          <div class="kpi-card" id="kpi-purchase">
+            <div class="kpi-label">Total Cost Basis</div>
+            <div class="kpi-value">—</div>
+            <div class="kpi-sub">Purchase Price</div>
+          </div>
+          <div class="kpi-card" id="kpi-pnl">
+            <div class="kpi-label">Total P&L</div>
+            <div class="kpi-value">—</div>
+            <div class="kpi-sub">—</div>
+          </div>
+          <div class="kpi-card" id="kpi-cards">
+            <div class="kpi-label">Total Cards</div>
+            <div class="kpi-value">—</div>
+            <div class="kpi-sub">— unique</div>
+          </div>
+        </div>
+
+        <!-- Portfolio Chart -->
+        <div class="panel full-width" id="portfolio-chart-panel">
+          <div class="panel-header">
+            <h2>Portfolio Value — 90 Day History</h2>
+          </div>
+          <div id="portfolio-chart" class="chart-container"></div>
+        </div>
+
+        <!-- Top Gainers & Losers -->
+        <div class="panel half-width">
+          <div class="panel-header">
+            <h2>🚀 Top Gainers (30d)</h2>
+          </div>
+          <div id="top-gainers" class="card-list"></div>
+        </div>
+        <div class="panel half-width">
+          <div class="panel-header">
+            <h2>📉 Top Losers (30d)</h2>
+          </div>
+          <div id="top-losers" class="card-list"></div>
+        </div>
+
+        <!-- Binder Breakdown -->
+        <div class="panel half-width">
+          <div class="panel-header">
+            <h2>📦 Binder Breakdown</h2>
+          </div>
+          <div id="binder-breakdown" class="breakdown-list"></div>
+        </div>
+
+        <!-- Rarity Breakdown -->
+        <div class="panel half-width">
+          <div class="panel-header">
+            <h2>💎 By Rarity</h2>
+          </div>
+          <div id="rarity-breakdown" class="breakdown-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Price Chart View -->
+    <section id="view-chart" class="view">
+      <div class="chart-view-layout">
+        <div class="chart-sidebar">
+          <div class="search-box">
+            <input type="text" id="card-search" placeholder="Search cards..." autocomplete="off" />
+            <div id="search-results" class="search-results"></div>
+          </div>
+          <div id="card-info-panel" class="card-info-panel">
+            <div class="card-image-wrap">
+              <img id="card-image" src="" alt="" />
+            </div>
+            <div id="card-details"></div>
+          </div>
+        </div>
+        <div class="chart-main">
+          <div class="chart-toolbar">
+            <div class="indicator-toggles">
+              <label><input type="checkbox" id="toggle-ema8" checked /> <span class="dot ema8"></span> EMA 8</label>
+              <label><input type="checkbox" id="toggle-ema21" checked /> <span class="dot ema21"></span> EMA 21</label>
+              <label><input type="checkbox" id="toggle-sma50" /> <span class="dot sma50"></span> SMA 50</label>
+              <label><input type="checkbox" id="toggle-bb" checked /> <span class="dot bb"></span> Bollinger</label>
+              <label><input type="checkbox" id="toggle-cost" checked /> <span class="dot cost"></span> Cost Basis</label>
+            </div>
+            <div class="vendor-toggles">
+              <button class="vendor-btn active" data-vendor="tcgplayer">TCGPlayer</button>
+              <button class="vendor-btn" data-vendor="cardkingdom">CardKingdom</button>
+              <button class="vendor-btn" data-vendor="cardmarket">Cardmarket</button>
+            </div>
+          </div>
+          <div id="price-chart" class="chart-container large"></div>
+          <div id="rsi-chart" class="chart-container small"></div>
+          <div id="chart-signals" class="signal-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Top Movers View (MTGStocks) -->
+    <section id="view-movers" class="view">
+      <div class="panel full-width">
+        <div class="panel-header">
+          <h2>📡 MTGStocks Daily Movers</h2>
+          <p class="panel-sub">Cards from the MTGStocks daily feed. <span class="highlight">Highlighted</span> = in your collection</p>
+        </div>
+        <div class="movers-filters">
+          <select id="movers-date-filter">
+            <option value="all">All Dates</option>
+          </select>
+          <select id="movers-type-filter">
+            <option value="all">All Types</option>
+            <option value="average">Average Price</option>
+            <option value="market">Market Price</option>
+          </select>
+          <label class="filter-check">
+            <input type="checkbox" id="movers-collection-only" />
+            Show only cards in collection
+          </label>
+        </div>
+        <div id="movers-table-wrap">
+          <table id="movers-table" class="data-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Card</th>
+                <th>Set</th>
+                <th>Price</th>
+                <th>Change</th>
+                <th>Type</th>
+                <th>In Collection?</th>
+              </tr>
+            </thead>
+            <tbody id="movers-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Signals View -->
+    <section id="view-signals" class="view">
+      <div class="signals-grid">
+        <div class="panel full-width">
+          <div class="panel-header">
+            <h2>⚡ Active Technical Signals</h2>
+            <p class="panel-sub">Cards in your collection showing notable technical patterns right now</p>
+          </div>
+          <div id="signals-summary" class="signals-summary"></div>
+        </div>
+        <div class="panel half-width">
+          <div class="panel-header">
+            <h2>🟢 Bullish Signals</h2>
+          </div>
+          <div id="bullish-signals" class="signal-card-list"></div>
+        </div>
+        <div class="panel half-width">
+          <div class="panel-header">
+            <h2>🔴 Bearish / Overbought</h2>
+          </div>
+          <div id="bearish-signals" class="signal-card-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Arbitrage View -->
+    <section id="view-arbitrage" class="view">
+      <div class="panel full-width">
+        <div class="panel-header">
+          <h2>💰 Vendor Arbitrage Scanner</h2>
+          <p class="panel-sub">Cards with >15% price gap between vendors. The market isn't efficient — exploit it.</p>
+        </div>
+        <table id="arbitrage-table" class="data-table">
+          <thead>
+            <tr>
+              <th>Card</th>
+              <th>Set</th>
+              <th>TCGPlayer</th>
+              <th>CardKingdom</th>
+              <th>CK Buylist</th>
+              <th>Cardmarket</th>
+              <th>Spread</th>
+              <th>Cheaper On</th>
+              <th>Binder</th>
+            </tr>
+          </thead>
+          <tbody id="arbitrage-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Collection View -->
+    <section id="view-collection" class="view">
+      <div class="panel full-width">
+        <div class="panel-header">
+          <h2>📋 Full Collection</h2>
+          <div class="collection-filters">
+            <input type="text" id="collection-search" placeholder="Filter by name..." />
+            <select id="collection-binder-filter">
+              <option value="all">All Binders</option>
+            </select>
+            <select id="collection-rarity-filter">
+              <option value="all">All Rarities</option>
+              <option value="mythic">Mythic</option>
+              <option value="rare">Rare</option>
+              <option value="uncommon">Uncommon</option>
+              <option value="common">Common</option>
+            </select>
+            <select id="collection-sort">
+              <option value="pnl_desc">P&L (High → Low)</option>
+              <option value="pnl_asc">P&L (Low → High)</option>
+              <option value="current_desc">Price (High → Low)</option>
+              <option value="current_asc">Price (Low → High)</option>
+              <option value="change_7d_desc">7d Change (High → Low)</option>
+              <option value="name_asc">Name (A → Z)</option>
+            </select>
+          </div>
+        </div>
+        <div id="collection-table-wrap">
+          <table id="collection-table" class="data-table">
+            <thead>
+              <tr>
+                <th>Card</th>
+                <th>Set</th>
+                <th>Finish</th>
+                <th>Qty</th>
+                <th>Purchase</th>
+                <th>Current</th>
+                <th>P&L</th>
+                <th>7d</th>
+                <th>30d</th>
+                <th>Binder</th>
+              </tr>
+            </thead>
+            <tbody id="collection-tbody"></tbody>
+          </table>
+        </div>
+        <div id="collection-pagination" class="pagination"></div>
+      </div>
+    </section>
+
+    <!-- Upload Modal -->
+    <div id="upload-modal" class="modal-overlay" style="display:none">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2>📥 Import Collection</h2>
+          <button class="modal-close" id="upload-modal-close">✕</button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-desc">Upload your <a href="https://manabox.app" target="_blank">ManaBox</a> collection export (.csv) to create your vault. Don't have ManaBox? <a href="/manabox_template.csv" download>Download the template CSV</a> and fill in your cards.</p>
+          <div id="drop-zone" class="drop-zone">
+            <div class="drop-zone-content">
+              <span class="drop-zone-icon">🃏</span>
+              <span class="drop-zone-text">Drag & drop your CSV here</span>
+              <span class="drop-zone-or">or</span>
+              <label class="drop-zone-browse">
+                Browse Files
+                <input type="file" id="file-input" accept=".csv" hidden />
+              </label>
+            </div>
+            <div id="drop-zone-filename" class="drop-zone-filename" style="display:none"></div>
+          </div>
+          <div class="upload-name-field">
+            <label for="vault-name">Vault Name</label>
+            <input type="text" id="vault-name" placeholder="e.g., My Collection" value="My Vault" />
+          </div>
+          <button class="btn-upload" id="btn-upload-submit" disabled>Create Vault</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Processing Overlay -->
+    <div id="processing-overlay" class="modal-overlay" style="display:none">
+      <div class="processing-card">
+        <div class="processing-spinner"></div>
+        <h3>Processing your collection...</h3>
+        <p class="processing-sub">Scanning 1.2GB of price data. This takes about 60 seconds.</p>
+        <div class="processing-status" id="processing-status">Starting...</div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/main.js"></script>
+</body>
+</html>
