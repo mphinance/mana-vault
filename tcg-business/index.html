@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🃏 TCG Business Toolkit</title>
+<style>
+  :root {
+    --bg: #0b0e14; --panel: #131722; --panel-2: #1b2030; --border: #2a3142;
+    --text: #d6dae3; --muted: #8b93a7; --accent: #5b8def; --accent-2: #38d39f; --gold: #e0b341;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: radial-gradient(1200px 600px at 50% -10%, #16203a 0%, var(--bg) 60%);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    min-height: 100vh; line-height: 1.5;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 70px 20px 80px; }
+  header { text-align: center; margin-bottom: 44px; }
+  h1 { font-size: 2.3rem; margin: 0 0 10px; letter-spacing: -0.02em; }
+  header p { color: var(--muted); margin: 0 auto; max-width: 540px; font-size: 1.05rem; }
+  .cards { display: grid; gap: 18px; grid-template-columns: 1fr 1fr; }
+  @media (max-width: 620px) { .cards { grid-template-columns: 1fr; } }
+  a.tile {
+    display: block; text-decoration: none; color: inherit;
+    background: linear-gradient(180deg, var(--panel) 0%, #0f131d 100%);
+    border: 1px solid var(--border); border-radius: 16px; padding: 28px 26px;
+    transition: border-color .15s, transform .08s, box-shadow .15s;
+  }
+  a.tile:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 12px 40px rgba(0,0,0,.4); }
+  a.tile .ic { font-size: 2.2rem; }
+  a.tile h2 { margin: 14px 0 6px; font-size: 1.3rem; }
+  a.tile p { margin: 0; color: var(--muted); font-size: .94rem; }
+  a.tile .go { display: inline-block; margin-top: 16px; color: var(--accent-2); font-weight: 600; font-size: .9rem; font-family: ui-monospace, monospace; }
+  .note {
+    margin-top: 38px; text-align: center; color: var(--muted); font-size: .9rem;
+    border-top: 1px solid var(--border); padding-top: 26px;
+  }
+  .note code { background: var(--panel-2); padding: 2px 6px; border-radius: 5px; font-size: .85em; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🃏 TCG Business Toolkit</h1>
+    <p>Ideas and a guided generator for starting a trading-card-game business —
+       built off the <strong>Mana Vault</strong> "cards as a financial asset" lens.</p>
+  </header>
+
+  <div class="cards">
+    <a class="tile" href="idea-generator.html">
+      <div class="ic">🎯</div>
+      <h2>Idea Generator</h2>
+      <p>Answer 6 quick questions about your capital, skills, and interests. Get matched idea
+         seeds plus a tailored prompt to paste into Claude or ChatGPT.</p>
+      <span class="go">Launch the interview →</span>
+    </a>
+    <a class="tile" href="ideas.html">
+      <div class="ic">📋</div>
+      <h2>The Ideas Brief</h2>
+      <p>A categorized rundown of TCG business ideas — software, retail, AI/ML, and content —
+         each with a pitch, who pays, why it's hard, and an honest difficulty read.</p>
+      <span class="go">Read the brief →</span>
+    </a>
+  </div>
+
+  <div class="note">
+    Everything runs in your browser — no data is collected or sent anywhere.
+    Source lives in <code>tcg-business/</code> of the Mana Vault repo.
+  </div>
+</div>
+</body>
+</html>
