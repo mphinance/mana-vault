@@ -132,7 +132,7 @@
 // ---- Response logging (optional) ----
 // Paste your deployed Google Apps Script Web App URL (…/exec) between the quotes to
 // turn on logging. While this is empty, nothing is sent and the form stays fully local.
-const LOG_ENDPOINT = "";
+const LOG_ENDPOINT = "https://script.google.com/macros/s/AKfycbxlA5nYxAu9Ow6KDFbyd5cJmltclQq6hRQUmICHHc_O-koAJRDMn_zJ2NtH5J6CW22H/exec";
 
 function logSubmission(payload) {
   if (!LOG_ENDPOINT) return Promise.resolve({ skipped: true });
