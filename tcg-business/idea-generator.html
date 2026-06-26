@@ -90,6 +90,20 @@
   .section-label { font-size: .72rem; letter-spacing: .15em; text-transform: uppercase; color: var(--muted); margin: 26px 0 10px; font-family: ui-monospace, monospace; }
   .copybar { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
   .copied { color: var(--accent-2); font-size: .85rem; align-self: center; }
+  .savebox {
+    margin-top: 28px; border: 1px solid var(--border); border-radius: 12px;
+    padding: 18px 20px; background: rgba(56,211,159,.05);
+  }
+  .savebox h3 { margin: 0 0 4px; font-size: 1.05rem; }
+  .savebox p { margin: 0 0 14px; color: var(--muted); font-size: .9rem; }
+  .savebox input {
+    width: 100%; background: #070a10; border: 1px solid var(--border); border-radius: 9px;
+    color: var(--text); padding: 11px 14px; font-size: 1rem; margin-bottom: 12px;
+  }
+  .savebox input:focus { outline: none; border-color: var(--accent); }
+  .savemsg { font-size: .9rem; align-self: center; }
+  .savemsg.ok { color: var(--accent-2); }
+  .savemsg.err { color: var(--danger); }
   footer { text-align: center; color: var(--muted); font-size: .82rem; margin-top: 30px; }
   a { color: var(--accent); }
   .hidden { display: none; }
@@ -109,12 +123,28 @@
   </div>
 
   <footer>
-    No data leaves your browser. Built off the <strong>Mana Vault</strong> project &mdash; see
+    <span id="privacyNote"></span> Built off the <strong>Mana Vault</strong> project &mdash; see
     <code>IDEAS.md</code> next to this file for the full write-up.
   </footer>
 </div>
 
 <script>
+// ---- Response logging (optional) ----
+// Paste your deployed Google Apps Script Web App URL (…/exec) between the quotes to
+// turn on logging. While this is empty, nothing is sent and the form stays fully local.
+const LOG_ENDPOINT = "https://script.google.com/macros/s/AKfycbxlA5nYxAu9Ow6KDFbyd5cJmltclQq6hRQUmICHHc_O-koAJRDMn_zJ2NtH5J6CW22H/exec";
+
+function logSubmission(payload) {
+  if (!LOG_ENDPOINT) return Promise.resolve({ skipped: true });
+  // text/plain keeps this a CORS "simple request" (no preflight); no-cors = fire-and-forget.
+  return fetch(LOG_ENDPOINT, {
+    method: "POST",
+    mode: "no-cors",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(payload),
+  });
+}
+
 // ---- Interview definition ----
 const QUESTIONS = [
   {
@@ -335,6 +365,35 @@ function showResults() {
   const top = ranked.slice(0, 3);
   const prompt = buildPrompt(top);
 
+  // Readable record sent to the optional Google Sheet log.
+  const a = answers;
+  const record = {
+    name: "",
+    capital: LABELS.capital[a.capital] || "",
+    skill: LABELS.skill[a.skill] || "",
+    time: LABELS.time[a.time] || "",
+    risk: LABELS.risk[a.risk] || "",
+    interests: (a.interest || []).map(i => INTEREST_LABELS[i]),
+    game: LABELS.game[a.game] || "",
+    top1: top[0] ? top[0].title : "",
+    top2: top[1] ? top[1].title : "",
+    top3: top[2] ? top[2].title : "",
+    prompt: prompt,
+    userAgent: navigator.userAgent,
+    page: location.href,
+  };
+
+  const saveSection = LOG_ENDPOINT ? `
+    <div class="savebox">
+      <h3>📨 Send your answers back?</h3>
+      <p>Optional — share your responses so we can follow up with more tailored help. Nothing is sent unless you click save.</p>
+      <input id="saveName" type="text" placeholder="First name (optional)" autocomplete="given-name">
+      <div class="copybar">
+        <button class="btn" id="saveBtn">💾 Save my responses</button>
+        <span class="savemsg" id="saveMsg"></span>
+      </div>
+    </div>` : "";
+
   resultsEl.innerHTML = `
     <div class="result-head">
       <h2>🎯 Your top matches</h2>
@@ -350,6 +409,7 @@ function showResults() {
       <button class="btn ghost" id="restartBtn">↻ Start over</button>
       <span class="copied hidden" id="copiedMsg">Copied ✓</span>
     </div>
+    ${saveSection}
   `;
 
   const seedsEl = document.getElementById("seeds");
@@ -389,11 +449,39 @@ function showResults() {
     quizEl.classList.remove("hidden");
     renderQuestion();
   };
+
+  const saveBtn = document.getElementById("saveBtn");
+  if (saveBtn) {
+    saveBtn.onclick = () => {
+      const msg = document.getElementById("saveMsg");
+      const nameEl = document.getElementById("saveName");
+      record.name = nameEl ? nameEl.value.trim() : "";
+      saveBtn.disabled = true;
+      msg.className = "savemsg";
+      msg.textContent = "Saving…";
+      logSubmission(record)
+        .then(() => {
+          msg.className = "savemsg ok";
+          msg.textContent = "Saved — thanks! ✓";
+          saveBtn.textContent = "✓ Saved";
+          if (nameEl) nameEl.disabled = true;
+        })
+        .catch(() => {
+          msg.className = "savemsg err";
+          msg.textContent = "Couldn't save — check your connection and retry.";
+          saveBtn.disabled = false;
+        });
+    };
+  }
 }
 
 function escapeHtml(s) {
   return s.replace(/[&<>]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;" }[c]));
 }
+
+document.getElementById("privacyNote").textContent = LOG_ENDPOINT
+  ? "Your answers stay in your browser unless you choose to save them at the end, in which case they're shared with the site owner to help you."
+  : "No data leaves your browser.";
 
 renderQuestion();
 </script>
