@@ -2,7 +2,7 @@ name: Deploy TCG Toolkit to Pages
 
 on:
   push:
-    branches: [claude/tcg-business-ideas-hr75l8]
+    branches: [main]
     paths:
       - 'tcg-business/**'
       - '.github/workflows/pages.yml'
