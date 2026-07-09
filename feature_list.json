@@ -242,7 +242,7 @@
       "grep -q view-gallery dashboard/index.html",
       "npm --prefix dashboard run build"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "id": 24,
@@ -253,6 +253,6 @@
       "grep -qi \"sell\" dashboard/main.js",
       "npm --prefix dashboard run build"
     ],
-    "passes": false
+    "passes": true
   }
 ]
