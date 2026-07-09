@@ -61,3 +61,13 @@ pipeline is hydrated: supply `ManaBox_Collection.csv` + `scryfall_to_mtgjson.jso
 - **Sell Queue** — inside Signals: owned cards flashing bearish signals (`bearish_cross`/`overbought`/`bb_upper_break`) ranked by `pnl × quantity`. Reuses the lazy-loaded price history; no extra fetch.
 
 Verification: py_compile clean, `newsletter.py --dry-run` exit 0, `npm run build` exit 0, zero new deps. 24/24 features passing.
+
+---
+
+## Round 3 — digest API + buy queue (branch feat/round3 → merged)
+
+- **`newsletter.py`** refactored — exposed pure `build_digest(data_dir) -> dict` (`generated_at`/`markdown`/`movers`/`alerts`/`buylist`), importable with no side effects; old markdown builder split out as `build_markdown()`. CLI unchanged.
+- **`GET /api/digest`** — serves the digest as JSON (optional `?vault=slug`, else shared dashboard data). Guarded: missing dir or any error → 200 with empty-but-valid sections, never a 500.
+- **Buy Queue** — inside Signals: owned cards flashing the latest bullish signal (`bullish_cross`/`oversold`/`bb_lower_break`) ranked by `current_price × quantity`. Reuses the lazy-loaded price history; row click → chart. The inverse of the Sell Queue.
+
+Verification: py_compile clean, `build_digest('/tmp/nope')` returns valid empty dict, `npm run build` exit 0 (~2.1s), zero new deps. 29/29 features passing.

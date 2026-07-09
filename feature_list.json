@@ -263,7 +263,7 @@
       "import build_digest without side effects",
       "call on empty dir -> valid dict with empty sections"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "id": 26,
@@ -274,7 +274,7 @@
       "route registered",
       "no 500 on missing data"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "id": 27,
@@ -285,7 +285,7 @@
       "ranked desc",
       "row click -> chart"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "id": 28,
@@ -295,7 +295,7 @@
       "empty holdings -> friendly state",
       "missing json -> empty sections"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "id": 29,
@@ -306,6 +306,6 @@
       "py_compile",
       "package.json unchanged"
     ],
-    "passes": false
+    "passes": true
   }
 ]
