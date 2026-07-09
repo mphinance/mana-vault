@@ -191,5 +191,68 @@
       "no new package.json deps"
     ],
     "passes": true
+  },
+  {
+    "id": 19,
+    "category": "functional",
+    "feature": "digest",
+    "description": "newsletter.py exists and compiles (py_compile clean)",
+    "steps": [
+      "python3 -m py_compile newsletter.py"
+    ],
+    "passes": false
+  },
+  {
+    "id": 20,
+    "category": "functional",
+    "feature": "digest",
+    "description": "newsletter.py builds digest.md from movers/alerts/buylist and degrades gracefully with no data (exit 0)",
+    "steps": [
+      "python3 newsletter.py --dry-run"
+    ],
+    "passes": false
+  },
+  {
+    "id": 21,
+    "category": "functional",
+    "feature": "digest",
+    "description": "newsletter.py supports optional --webhook / MANA_VAULT_DIGEST_WEBHOOK, stdlib only, no network when unset",
+    "steps": [
+      "grep -q urllib newsletter.py"
+    ],
+    "passes": false
+  },
+  {
+    "id": 22,
+    "category": "functional",
+    "feature": "api",
+    "description": "GET /api/vaults enriched with per-vault total_value read from portfolio.json, guarded",
+    "steps": [
+      "grep -q total_value api/main.py",
+      "python3 -m py_compile api/main.py"
+    ],
+    "passes": false
+  },
+  {
+    "id": 23,
+    "category": "functional",
+    "feature": "gallery",
+    "description": "Public Vault Gallery view lists ready vaults as clickable cards opening ?vault=slug",
+    "steps": [
+      "grep -q view-gallery dashboard/index.html",
+      "npm --prefix dashboard run build"
+    ],
+    "passes": false
+  },
+  {
+    "id": 24,
+    "category": "functional",
+    "feature": "sellqueue",
+    "description": "Sell Queue surfaces owned bearish-signal cards ranked by pnl x quantity",
+    "steps": [
+      "grep -qi \"sell\" dashboard/main.js",
+      "npm --prefix dashboard run build"
+    ],
+    "passes": false
   }
 ]

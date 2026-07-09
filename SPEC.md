@@ -108,3 +108,32 @@ Render the already-generated `events.json` (nobody consumes it today; only 6 tab
 - No changes to `api/main.py`, `update.py`, `scrape_events.py`, the pipeline's price extraction, or
   `reference/*`.
 - No new npm/pip dependencies.
+
+---
+
+# ROUND 2 — growth loop + flipper + digest
+
+Same constraints as above (no data → verify via py_compile + vite build; stdlib only; no new
+frontend deps; degrade gracefully). New branch `feat/round2`.
+
+## Feature 4 — Daily Digest (`newsletter.py`, new standalone script)
+Reads `dashboard/public/data/{movers,alerts,buylist_margins}.json` (all optional) and emits a
+Markdown digest to `dashboard/public/data/digest.md` (and stdout): "Today's Top Movers",
+"New Alerts", "Best Buylist Margins". Optional `--webhook URL` / `MANA_VAULT_DIGEST_WEBHOOK`
+(stdlib urllib, best-effort). `--dry-run` writes nothing. Missing/empty files → friendly digest,
+exit 0. Does NOT modify preprocess.py or alerts.py.
+
+## Feature 5 — Enriched vault list (`api/main.py` only)
+Enrich `GET /api/vaults`: for each ready vault, read its `data/portfolio.json` (if present) and
+add `total_value` and (if cheap) `top_gainer` to the returned dict. Guard all file reads. Do NOT
+touch the frontend. Keep the existing response shape additive (don't remove fields).
+
+## Feature 6 — Public Vault Gallery + Sell Queue (`dashboard/` only, single frontend agent)
+- **Gallery**: new `data-view="gallery"` tab + `#view-gallery` section. Fetches `${API_BASE}/vaults`,
+  renders ready vaults as clickable cards (name, card_count, total_value if present) that open
+  `?vault=slug`. Empty/failed fetch → friendly empty state. Reuse `fmt`.
+- **Sell Queue**: within the existing Signals view (or a sub-panel), surface OWNED cards whose
+  latest signal is bearish (`bearish_cross`/`overbought`/`bb_upper_break`), ranked by
+  `pnl × quantity` (dollar impact). Reuse `cards.json` (already loaded) joined to signals from the
+  signals data already in memory. Framed as "Sell Queue" with dollar impact shown. Degrade
+  gracefully when no holdings/signals.
