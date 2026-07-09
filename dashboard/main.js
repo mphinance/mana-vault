@@ -15,6 +15,7 @@ let arbitrage = [];
 let events = null;
 let alerts = null;
 let buylist = [];
+let sealed = [];
 let priceHistory = null;  // Lazy loaded
 let selectedCard = null;
 let priceChart = null;
@@ -49,6 +50,7 @@ async function loadData() {
     fetch(`${base}/events.json`).then(r => r.ok ? r.json() : null).catch(() => null),
     fetch(`${base}/alerts.json`).then(r => r.ok ? r.json() : null).catch(() => null),
     fetch(`${base}/buylist_margins.json`).then(r => r.ok ? r.json() : []).catch(() => []),
+    fetch(`${base}/sealed.json`).then(r => r.ok ? r.json() : []).catch(() => []),
   ];
 
   // Movers only exist for default (owner) data
@@ -64,7 +66,8 @@ async function loadData() {
   events = results[3] || null;
   alerts = results[4] || null;
   buylist = results[5] || [];
-  movers = results[6] || [];
+  sealed = results[6] || [];
+  movers = results[7] || [];
   
   // Reset lazy-loaded data
   priceHistory = null;
@@ -102,6 +105,31 @@ function fmtPct(n) {
 function pnlClass(n) {
   if (n === null || n === undefined) return '';
   return n >= 0 ? 'positive' : 'negative';
+}
+
+// ── Sealed-aware totals ────────────────────────────────────────────
+// Prefer the values preprocess.py folded into portfolio.json; fall back to
+// summing sealed.json so a combined total shows even across separate runs.
+function sealedCurrentTotal() {
+  if (portfolio && typeof portfolio.sealed_current === 'number') return portfolio.sealed_current;
+  return (sealed || []).reduce((s, x) => s + (x.total_current || 0), 0);
+}
+function sealedPurchaseTotal() {
+  if (portfolio && typeof portfolio.sealed_purchase === 'number') return portfolio.sealed_purchase;
+  return (sealed || []).reduce((s, x) => s + (x.total_purchase || 0), 0);
+}
+function sealedItemCount() {
+  if (portfolio && typeof portfolio.sealed_count === 'number') return portfolio.sealed_count;
+  return (sealed || []).reduce((s, x) => s + (x.quantity || 0), 0);
+}
+function singlesCurrentTotal() { return (portfolio && portfolio.total_current) || 0; }
+function singlesPurchaseTotal() { return (portfolio && portfolio.total_purchase) || 0; }
+function grandCurrentTotal() { return singlesCurrentTotal() + sealedCurrentTotal(); }
+function grandPurchaseTotal() { return singlesPurchaseTotal() + sealedPurchaseTotal(); }
+function grandPnl() { return grandCurrentTotal() - grandPurchaseTotal(); }
+function grandPnlPct() {
+  const basis = grandPurchaseTotal();
+  return basis > 0 ? (grandCurrentTotal() / basis - 1) * 100 : 0;
 }
 
 function scryfallImage(id, size = 'small') {
@@ -143,6 +171,7 @@ function switchView(view) {
   if (view === 'signals') renderSignals();
   if (view === 'arbitrage') renderArbitrage();
   if (view === 'collection') renderCollection();
+  if (view === 'sealed') renderSealed();
   if (view === 'events') renderEvents();
   if (view === 'alerts') renderAlerts();
   if (view === 'buylist') renderBuylist();
@@ -155,29 +184,42 @@ function switchView(view) {
 function renderPortfolio() {
   if (!portfolio) return;
   
+  // Combined totals — singles + sealed as ONE number (the core feature).
+  const hasSealed = sealedCurrentTotal() > 0;
+  const totalCurrent = grandCurrentTotal();
+  const totalPnl = grandPnl();
+  const totalPnlPct = grandPnlPct();
+
   // Header stats
-  $('#header-total').textContent = fmt(portfolio.total_current, 0);
+  $('#header-total').textContent = fmt(totalCurrent, 0);
   const pnlEl = $('#header-pnl-value');
-  pnlEl.textContent = `${fmt(portfolio.total_pnl, 0)} (${fmtPct(portfolio.total_pnl_pct)})`;
-  pnlEl.className = `stat-value ${pnlClass(portfolio.total_pnl)}`;
-  
+  pnlEl.textContent = `${fmt(totalPnl, 0)} (${fmtPct(totalPnlPct)})`;
+  pnlEl.className = `stat-value ${pnlClass(totalPnl)}`;
+
   // KPIs
   const setKPI = (id, value, sub) => {
     const el = $(`#${id}`);
     el.querySelector('.kpi-value').textContent = value;
     if (sub) el.querySelector('.kpi-sub').textContent = sub;
   };
-  
-  setKPI('kpi-current', fmt(portfolio.total_current, 0), 'TCGPlayer Retail');
-  setKPI('kpi-purchase', fmt(portfolio.total_purchase, 0), 'Purchase Price');
-  
+
+  setKPI('kpi-current', fmt(totalCurrent, 0),
+    hasSealed
+      ? `Singles ${fmt(singlesCurrentTotal(), 0)} · Sealed ${fmt(sealedCurrentTotal(), 0)}`
+      : 'TCGPlayer Retail');
+  setKPI('kpi-purchase', fmt(grandPurchaseTotal(), 0), 'Purchase Price');
+
   const pnlKpi = $('#kpi-pnl');
-  pnlKpi.querySelector('.kpi-value').textContent = fmt(portfolio.total_pnl, 0);
-  pnlKpi.querySelector('.kpi-value').className = `kpi-value ${pnlClass(portfolio.total_pnl)}`;
-  pnlKpi.querySelector('.kpi-sub').textContent = fmtPct(portfolio.total_pnl_pct);
-  pnlKpi.querySelector('.kpi-sub').className = `kpi-sub ${pnlClass(portfolio.total_pnl)}`;
-  
-  setKPI('kpi-cards', portfolio.card_count.toLocaleString(), `${portfolio.unique_cards.toLocaleString()} unique`);
+  pnlKpi.querySelector('.kpi-value').textContent = fmt(totalPnl, 0);
+  pnlKpi.querySelector('.kpi-value').className = `kpi-value ${pnlClass(totalPnl)}`;
+  pnlKpi.querySelector('.kpi-sub').textContent = fmtPct(totalPnlPct);
+  pnlKpi.querySelector('.kpi-sub').className = `kpi-sub ${pnlClass(totalPnl)}`;
+
+  const sealedCount = sealedItemCount();
+  const cardsSub = hasSealed
+    ? `${portfolio.unique_cards.toLocaleString()} unique · ${sealedCount.toLocaleString()} sealed`
+    : `${portfolio.unique_cards.toLocaleString()} unique`;
+  setKPI('kpi-cards', portfolio.card_count.toLocaleString(), cardsSub);
   
   // Portfolio chart
   renderPortfolioChart();
@@ -1101,6 +1143,109 @@ function renderCollection() {
   $('#collection-sort').addEventListener('change', applyFilters);
   
   applyFilters();
+}
+
+// ═══════════════════════════════════
+// Sealed Product View
+// ═══════════════════════════════════
+function renderSealed() {
+  const items = sealed || [];
+
+  // KPIs
+  const setKPI = (id, value, sub, cls) => {
+    const el = $(`#${id}`);
+    if (!el) return;
+    const v = el.querySelector('.kpi-value');
+    v.textContent = value;
+    if (cls !== undefined) v.className = `kpi-value ${cls}`;
+    if (sub !== undefined) {
+      const s = el.querySelector('.kpi-sub');
+      s.textContent = sub;
+      if (cls !== undefined) s.className = `kpi-sub ${cls}`;
+    }
+  };
+
+  const sealedCurrent = sealedCurrentTotal();
+  const sealedCost = sealedPurchaseTotal();
+  const sealedPnlVal = sealedCurrent - sealedCost;
+  const sealedPnlPct = sealedCost > 0 ? (sealedCurrent / sealedCost - 1) * 100 : 0;
+
+  setKPI('kpi-sealed-current', fmt(sealedCurrent, 0), 'Current market');
+  setKPI('kpi-sealed-cost', fmt(sealedCost, 0), 'Purchase price');
+  setKPI('kpi-sealed-pnl', fmt(sealedPnlVal, 0), fmtPct(sealedPnlPct), pnlClass(sealedPnlVal));
+  setKPI('kpi-sealed-count', sealedItemCount().toLocaleString(), `${items.length.toLocaleString()} products`);
+
+  // Combined banner (singles + sealed = total)
+  $('#combined-singles').textContent = fmt(singlesCurrentTotal(), 0);
+  $('#combined-sealed').textContent = fmt(sealedCurrent, 0);
+  $('#combined-total').textContent = fmt(grandCurrentTotal(), 0);
+
+  const emptyState = (msg) =>
+    `<div style="color: var(--text-muted); font-size: 0.85rem; padding: 16px;">${msg}</div>`;
+
+  // By product type breakdown
+  const typeEl = $('#sealed-type-breakdown');
+  const typeSummary = (portfolio && portfolio.sealed_type_summary) || null;
+  let typeRows = [];
+  if (typeSummary) {
+    typeRows = Object.entries(typeSummary).map(([type, s]) => ({
+      type, count: s.count, current: s.current,
+    }));
+  } else {
+    // Fall back to aggregating sealed.json client-side.
+    const agg = {};
+    items.forEach(it => {
+      const t = it.product_type || 'Other';
+      agg[t] = agg[t] || { count: 0, current: 0 };
+      agg[t].count += it.quantity || 0;
+      agg[t].current += it.total_current || 0;
+    });
+    typeRows = Object.entries(agg).map(([type, s]) => ({ type, count: s.count, current: s.current }));
+  }
+  typeRows.sort((a, b) => b.current - a.current);
+  typeEl.innerHTML = typeRows.length
+    ? typeRows.map(r => `
+        <div class="breakdown-item">
+          <span class="breakdown-name">${r.type}</span>
+          <span class="breakdown-meta">${r.count} item${r.count === 1 ? '' : 's'}</span>
+          <span class="breakdown-value" style="font-family: var(--font-mono)">${fmt(r.current, 0)}</span>
+        </div>`).join('')
+    : emptyState('No sealed product yet.');
+
+  // Top positions
+  const topEl = $('#sealed-top');
+  const top = [...items].sort((a, b) => (b.total_current || 0) - (a.total_current || 0)).slice(0, 8);
+  topEl.innerHTML = top.length
+    ? top.map(it => `
+        <div class="breakdown-item">
+          <span class="breakdown-name">${it.product_name}</span>
+          <span class="breakdown-meta">×${it.quantity}</span>
+          <span class="breakdown-value" style="font-family: var(--font-mono)">${fmt(it.total_current, 0)}</span>
+        </div>`).join('')
+    : emptyState('No sealed product yet.');
+
+  // Full table
+  const tbody = $('#sealed-tbody');
+  if (!items.length) {
+    tbody.innerHTML = `<tr><td colspan="9" style="padding: 24px; text-align: center; color: var(--text-muted);">
+      No sealed product tracked yet. Add a <code>Sealed_Products.csv</code> in the project root (or
+      <a href="/sealed_template.csv" download>download the template</a>) and re-run <code>python3 preprocess.py</code>.
+    </td></tr>`;
+    return;
+  }
+  const rows = [...items].sort((a, b) => (b.total_current || 0) - (a.total_current || 0));
+  tbody.innerHTML = rows.map(it => `
+    <tr>
+      <td><strong>${it.product_name}</strong>${it.notes ? `<div style="font-size:0.72rem;color:var(--text-muted)">${it.notes}</div>` : ''}</td>
+      <td>${it.product_type}</td>
+      <td>${it.set_code || '—'}</td>
+      <td>${it.quantity}</td>
+      <td style="font-family: var(--font-mono)">${fmt(it.purchase_price)}</td>
+      <td style="font-family: var(--font-mono)">${fmt(it.current_value)}</td>
+      <td style="font-family: var(--font-mono); font-weight: 600">${fmt(it.total_current)}</td>
+      <td class="${pnlClass(it.pnl)}" style="font-family: var(--font-mono)">${fmt(it.pnl)}</td>
+      <td style="font-size: 0.75rem; color: var(--text-muted)">${it.acquired_date || '—'}</td>
+    </tr>`).join('');
 }
 
 // ═══════════════════════════════════

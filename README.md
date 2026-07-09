@@ -39,11 +39,19 @@ Searchable, sortable, paginated table of every card in your collection with curr
 
 ![Collection](screenshots/collection.png)
 
+### 🎁 Sealed Product
+Track booster boxes, bundles, and Secret Lairs right alongside your singles — the thing other trackers make you re-enter in a second app. The **Sealed** tab shows sealed value, cost basis, and P&L, a breakdown by product type, and a full table of every sealed item. The Portfolio's **Current Value** and header total roll singles + sealed into **one combined number** (`Singles $X · Sealed $Y`), so you finally see your true collection value in a single place.
+
+Sealed product is loaded from a `Sealed_Products.csv` in the project root (grab [`dashboard/public/sealed_template.csv`](dashboard/public/sealed_template.csv) to start). Columns: `Product Name, Product Type, Set Code, Set Name, Quantity, Purchase Price, Current Value, Acquired Date, Notes`. Only `Product Name` is required — everything else defaults gracefully, and a missing file simply means zero sealed product.
+
+> **On sealed pricing:** the `Current Value` column is collector-maintained for now (the automatic price source for sealed is still being decided). The data shape is ready to be auto-populated later without any schema change.
+
 ## Data Pipeline
 
 ```
-ManaBox CSV → preprocess.py → dashboard/public/data/*.json
-AllPrices.json (MTGJSON 1.2GB) ─┘
+ManaBox CSV ──────────────────┐
+Sealed_Products.csv ──────────┤→ preprocess.py → dashboard/public/data/*.json
+AllPrices.json (MTGJSON 1.2GB) ┘
 ```
 
 **`preprocess.py`** — Single-pass streaming extraction of price history from MTGJSON's AllPrices.json. Computes technical indicators (EMA, SMA, RSI, Bollinger Bands), detects signals, calculates P&L, and identifies arbitrage opportunities.

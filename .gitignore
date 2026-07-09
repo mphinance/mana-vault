@@ -10,6 +10,7 @@ scryfall_to_mtgjson.json
 
 # Collection data (personal)
 ManaBox_Collection.csv
+Sealed_Products.csv
 chat.txt
 
 # Preprocessed dashboard data (generated)
