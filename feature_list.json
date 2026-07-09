@@ -114,7 +114,7 @@
       "data-view=events in index.html",
       "#view-events section present"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "id": 12,
@@ -125,7 +125,7 @@
       "events.json fetch present",
       "renderEvents present"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "id": 13,
@@ -135,7 +135,7 @@
     "steps": [
       "in_collection handling present"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "id": 14,
@@ -147,7 +147,7 @@
       "renderAlerts present",
       "selectCard/switchView('chart') link"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "id": 15,
@@ -158,7 +158,7 @@
       "data-view=buylist",
       "renderBuylist present"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "id": 16,
@@ -168,7 +168,7 @@
     "steps": [
       "cd dashboard && npm install && npm run build"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "id": 17,
@@ -179,7 +179,7 @@
       "null-safe fetches",
       "empty-state branches"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "id": 18,
@@ -190,6 +190,6 @@
       "helper reuse",
       "no new package.json deps"
     ],
-    "passes": false
+    "passes": true
   }
 ]
