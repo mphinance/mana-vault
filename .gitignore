@@ -16,6 +16,10 @@ chat.txt
 # Preprocessed dashboard data (generated)
 dashboard/public/data/
 
+# Python
+__pycache__/
+*.pyc
+
 # Node
 node_modules/
 dashboard/node_modules/
