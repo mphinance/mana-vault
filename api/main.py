@@ -191,13 +191,29 @@ async def list_vaults():
         if os.path.exists(meta_path):
             with open(meta_path) as f:
                 meta = json.load(f)
-            vaults.append({
+            vault = {
                 "slug": meta.get("slug", slug),
                 "name": meta.get("name", slug),
                 "card_count": meta.get("card_count", 0),
                 "status": meta.get("status", "unknown"),
                 "created": meta.get("created"),
-            })
+            }
+
+            # Additively enrich with portfolio value if available.
+            # Guarded: a missing/broken portfolio.json must not break the endpoint.
+            portfolio_path = os.path.join(
+                USER_DATA_DIR, slug, "data", "portfolio.json"
+            )
+            try:
+                with open(portfolio_path) as f:
+                    portfolio = json.load(f)
+                total_value = portfolio.get("total_current")
+                if total_value is not None:
+                    vault["total_value"] = total_value
+            except (FileNotFoundError, ValueError, OSError):
+                pass
+
+            vaults.append(vault)
     return {"vaults": vaults}
 
 

@@ -50,3 +50,14 @@ pipeline is hydrated: supply `ManaBox_Collection.csv` + `scryfall_to_mtgjson.jso
 - Wire `alerts.py` into `update.py` (or a cron) so alerts fire automatically after each daily refresh.
 - Public shareable-vault gallery (`GET /api/vaults` exists, unused) — the growth loop.
 - Deck-value tracking (needs pricing cards outside the owned set — real pipeline change).
+
+---
+
+## Round 2 — growth loop + flipper (branch feat/round2 → merged)
+
+- **`newsletter.py`** (new) — daily Markdown digest from movers + alerts + buylist → `digest.md` + optional webhook (`MANA_VAULT_DIGEST_WEBHOOK`). stdlib only, `--dry-run`, degrades on no data.
+- **`GET /api/vaults`** — additively enriched with optional per-vault `total_value` (from `total_current`), fully guarded.
+- **Public Vault Gallery** — new `gallery` tab; lists ready vaults as clickable cards → `?vault=slug`. The growth loop (every shared vault is an ad).
+- **Sell Queue** — inside Signals: owned cards flashing bearish signals (`bearish_cross`/`overbought`/`bb_upper_break`) ranked by `pnl × quantity`. Reuses the lazy-loaded price history; no extra fetch.
+
+Verification: py_compile clean, `newsletter.py --dry-run` exit 0, `npm run build` exit 0, zero new deps. 24/24 features passing.

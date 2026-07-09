@@ -146,6 +146,7 @@ function switchView(view) {
   if (view === 'events') renderEvents();
   if (view === 'alerts') renderAlerts();
   if (view === 'buylist') renderBuylist();
+  if (view === 'gallery') renderGallery();
 }
 
 // ═══════════════════════════════════
@@ -845,6 +846,74 @@ async function renderSignals() {
   
   renderSignalList(bullishSignals, '#bullish-signals');
   renderSignalList(bearishSignals, '#bearish-signals');
+
+  renderSellQueue(history);
+}
+
+// ═══════════════════════════════════
+// Sell Queue (within Signals view)
+// ═══════════════════════════════════
+const SELL_SIGNAL_TYPES = new Set(['bearish_cross', 'overbought', 'bb_upper_break']);
+
+function renderSellQueue(history) {
+  const container = $('#sell-queue');
+  if (!container) return;
+
+  const emptyState = (msg) =>
+    `<div style="color: var(--text-muted); font-size: 0.85rem; padding: 16px;">${msg}</div>`;
+
+  if (!Array.isArray(cards) || cards.length === 0) {
+    container.innerHTML = emptyState('No holdings — import a collection to build a sell queue.');
+    return;
+  }
+
+  const rows = [];
+  for (const card of cards) {
+    if (!card.quantity || card.quantity <= 0) continue;
+    const detail = history && history[card.scryfall_id];
+    const signals = detail?.technicals?.signals;
+    if (!Array.isArray(signals) || signals.length === 0) continue;
+
+    // Latest signal only
+    const latest = signals[signals.length - 1];
+    if (!latest || !SELL_SIGNAL_TYPES.has(latest.type)) continue;
+
+    const impact = (card.pnl || 0) * (card.quantity || 0);
+    rows.push({
+      name: card.name,
+      scryfall_id: card.scryfall_id,
+      current_price: card.current_price,
+      quantity: card.quantity,
+      signal: latest,
+      impact,
+    });
+  }
+
+  if (rows.length === 0) {
+    container.innerHTML = emptyState('No owned cards with a bearish latest signal. Nothing to trim right now.');
+    return;
+  }
+
+  rows.sort((a, b) => b.impact - a.impact);
+
+  container.innerHTML = rows.slice(0, 30).map(r => `
+    <div class="signal-card-item" data-scryfall="${r.scryfall_id}">
+      <img class="signal-card-thumb" src="${scryfallImage(r.scryfall_id)}" alt="" loading="lazy" />
+      <div class="signal-card-info">
+        <div class="signal-card-name"><strong>${r.name}</strong> <span class="signal-badge bearish">${r.signal.label}</span></div>
+        <div class="signal-card-signal">x${r.quantity} · <a href="https://scryfall.com/card/${r.scryfall_id}" target="_blank" rel="noopener">Scryfall</a></div>
+      </div>
+      <div class="signal-card-price ${pnlClass(r.impact)}">${fmt(r.impact)}</div>
+    </div>
+  `).join('');
+
+  container.querySelectorAll('.signal-card-item').forEach(el => {
+    el.addEventListener('click', (e) => {
+      if (e.target.closest('a')) return;
+      switchView('chart');
+      selectCard(el.dataset.scryfall);
+    });
+  });
 }
 
 // ═══════════════════════════════════
@@ -1170,6 +1239,59 @@ function renderBuylist() {
       });
     });
   }
+}
+
+// ═══════════════════════════════════
+// Public Vault Gallery
+// ═══════════════════════════════════
+async function renderGallery() {
+  const container = $('#gallery-grid');
+  if (!container) return;
+
+  const emptyState = (msg) =>
+    `<div style="color: var(--text-muted); font-size: 0.85rem; padding: 16px; grid-column: 1 / -1;">${msg}</div>`;
+
+  container.innerHTML = emptyState('Loading vaults…');
+
+  let vaults = [];
+  try {
+    const res = await fetch(`${API_BASE}/vaults`);
+    if (!res.ok) throw new Error(`${res.status}`);
+    const data = await res.json();
+    vaults = Array.isArray(data?.vaults) ? data.vaults : [];
+  } catch (e) {
+    console.warn('Could not load vault gallery:', e);
+    container.innerHTML = emptyState('Could not load vaults — the API may not be running.');
+    return;
+  }
+
+  const ready = vaults.filter(v => v && v.status === 'ready');
+  if (ready.length === 0) {
+    container.innerHTML = emptyState('No public vaults yet. Import a collection to create the first one.');
+    return;
+  }
+
+  container.innerHTML = ready.map(v => {
+    const name = v.name || v.slug || 'Vault';
+    const cardCount = (v.card_count ?? 0).toLocaleString();
+    const valueHtml = (v.total_value !== null && v.total_value !== undefined)
+      ? `<div class="gallery-card-value">${fmt(v.total_value, 0)}</div>`
+      : '';
+    return `
+      <div class="gallery-card" data-slug="${v.slug}">
+        <div class="gallery-card-name"><strong>${name}</strong></div>
+        <div class="gallery-card-meta">${cardCount} cards</div>
+        ${valueHtml}
+      </div>
+    `;
+  }).join('');
+
+  container.querySelectorAll('.gallery-card').forEach(el => {
+    el.addEventListener('click', () => {
+      const slug = el.dataset.slug;
+      if (slug) window.location.href = `${window.location.origin}/?vault=${slug}`;
+    });
+  });
 }
 
 // ═══════════════════════════════════
