@@ -551,6 +551,47 @@ body::before {
   border: 1px solid rgba(255, 215, 64, 0.2);
 }
 
+/* ═══ Public Vault Gallery ═══ */
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--gap);
+}
+
+.gallery-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  padding: 18px;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+
+.gallery-card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+  transform: translateY(-2px);
+}
+
+.gallery-card-name {
+  font-size: 1rem;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.gallery-card-meta {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.gallery-card-value {
+  margin-top: 10px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: var(--gold);
+}
+
 /* ═══ Signals Summary ═══ */
 .signals-summary {
   display: grid;

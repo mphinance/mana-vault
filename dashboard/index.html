@@ -31,6 +31,7 @@
         <button class="nav-btn" data-view="events">Events</button>
         <button class="nav-btn" data-view="alerts">Alerts</button>
         <button class="nav-btn" data-view="buylist">Buylist</button>
+        <button class="nav-btn" data-view="gallery">Gallery</button>
       </nav>
       <div class="header-right">
         <div class="header-stat" id="header-value">
@@ -229,6 +230,13 @@
           </div>
           <div id="bearish-signals" class="signal-card-list"></div>
         </div>
+        <div class="panel full-width">
+          <div class="panel-header">
+            <h2>📉 Sell Queue</h2>
+            <p class="panel-sub">Owned cards flashing a bearish signal, ranked by dollar impact (P&amp;L × quantity). Consider trimming these first.</p>
+          </div>
+          <div id="sell-queue" class="signal-card-list"></div>
+        </div>
       </div>
     </section>
 
@@ -370,6 +378,17 @@
             <tbody id="buylist-tbody"></tbody>
           </table>
         </div>
+      </div>
+    </section>
+
+    <!-- Gallery View -->
+    <section id="view-gallery" class="view">
+      <div class="panel full-width">
+        <div class="panel-header">
+          <h2>🗄️ Public Vault Gallery</h2>
+          <p class="panel-sub">Browse public vaults uploaded by other collectors. Click one to open it.</p>
+        </div>
+        <div id="gallery-grid" class="gallery-grid"></div>
       </div>
     </section>
 
