@@ -1,20 +1,195 @@
 [
-  { "id": 1, "category": "functional", "feature": "alerts", "description": "alerts.py exists and compiles (py_compile clean)", "steps": ["python3 -m py_compile alerts.py"], "passes": false },
-  { "id": 2, "category": "functional", "feature": "alerts", "description": "alerts.py reads technicals.signals from price_history.json per card", "steps": ["grep for price_history.json read", "grep for technicals / signals access"], "passes": false },
-  { "id": 3, "category": "functional", "feature": "alerts", "description": "alerts.py diffs against alerts_state.json snapshot and emits only NEW fires to alerts.json", "steps": ["snapshot read/write present", "alerts.json write present", "new-only diff logic present"], "passes": false },
-  { "id": 4, "category": "functional", "feature": "alerts", "description": "First run with no snapshot seeds state and emits zero alerts (no historical spam)", "steps": ["logic branch for missing snapshot"], "passes": false },
-  { "id": 5, "category": "functional", "feature": "alerts", "description": "Optional webhook via --webhook / MANA_VAULT_WEBHOOK using stdlib only; no config = no network", "steps": ["urllib.request POST present", "guarded by flag/env"], "passes": false },
-  { "id": 6, "category": "functional", "feature": "alerts", "description": "--dry-run flag computes without writing snapshot/alerts", "steps": ["dry-run branch present"], "passes": false },
-  { "id": 7, "category": "functional", "feature": "buylist", "description": "preprocess.py compiles after buylist changes (py_compile clean)", "steps": ["python3 -m py_compile preprocess.py"], "passes": false },
-  { "id": 8, "category": "functional", "feature": "buylist", "description": "build_buylist_margins() computes best_retail, ck_buylist, margin_abs, margin_pct with divide-by-zero guards", "steps": ["function defined", "None/zero guards present"], "passes": false },
-  { "id": 9, "category": "functional", "feature": "buylist", "description": "write_output emits buylist_margins.json and main() passes it in both modes", "steps": ["write_output param + write present", "main() call present"], "passes": false },
-  { "id": 10, "category": "functional", "feature": "buylist", "description": "Output sorted by margin_pct desc, capped at 200 (mirrors find_arbitrage)", "steps": ["sort + slice present"], "passes": false },
-  { "id": 11, "category": "functional", "feature": "events", "description": "Dashboard has an Events nav tab and #view-events section", "steps": ["data-view=events in index.html", "#view-events section present"], "passes": false },
-  { "id": 12, "category": "functional", "feature": "events", "description": "loadData fetches events.json null-safe and renderEvents renders upcoming/recent/metagame", "steps": ["events.json fetch present", "renderEvents present"], "passes": false },
-  { "id": 13, "category": "functional", "feature": "events", "description": "Metagame archetypes with in_collection=true are highlighted", "steps": ["in_collection handling present"], "passes": false },
-  { "id": 14, "category": "functional", "feature": "alerts-ui", "description": "Alerts nav tab + renderAlerts renders alerts.json, each fire links to its card chart", "steps": ["data-view=alerts", "renderAlerts present", "selectCard/switchView('chart') link"], "passes": false },
-  { "id": 15, "category": "functional", "feature": "buylist-ui", "description": "Buylist nav tab + renderBuylist renders buylist_margins.json as a table", "steps": ["data-view=buylist", "renderBuylist present"], "passes": false },
-  { "id": 16, "category": "functional", "feature": "build", "description": "Dashboard builds cleanly with Vite (npm run build) after all frontend changes", "steps": ["cd dashboard && npm install && npm run build"], "passes": false },
-  { "id": 17, "category": "style", "feature": "resilience", "description": "All new views degrade gracefully on missing/empty JSON (no console errors, friendly empty states)", "steps": ["null-safe fetches", "empty-state branches"], "passes": false },
-  { "id": 18, "category": "style", "feature": "consistency", "description": "New views reuse existing helpers (fmt/fmtPct/switchView/scryfallImage) and match the dark theme; no new deps", "steps": ["helper reuse", "no new package.json deps"], "passes": false }
+  {
+    "id": 1,
+    "category": "functional",
+    "feature": "alerts",
+    "description": "alerts.py exists and compiles (py_compile clean)",
+    "steps": [
+      "python3 -m py_compile alerts.py"
+    ],
+    "passes": true
+  },
+  {
+    "id": 2,
+    "category": "functional",
+    "feature": "alerts",
+    "description": "alerts.py reads technicals.signals from price_history.json per card",
+    "steps": [
+      "grep for price_history.json read",
+      "grep for technicals / signals access"
+    ],
+    "passes": true
+  },
+  {
+    "id": 3,
+    "category": "functional",
+    "feature": "alerts",
+    "description": "alerts.py diffs against alerts_state.json snapshot and emits only NEW fires to alerts.json",
+    "steps": [
+      "snapshot read/write present",
+      "alerts.json write present",
+      "new-only diff logic present"
+    ],
+    "passes": true
+  },
+  {
+    "id": 4,
+    "category": "functional",
+    "feature": "alerts",
+    "description": "First run with no snapshot seeds state and emits zero alerts (no historical spam)",
+    "steps": [
+      "logic branch for missing snapshot"
+    ],
+    "passes": true
+  },
+  {
+    "id": 5,
+    "category": "functional",
+    "feature": "alerts",
+    "description": "Optional webhook via --webhook / MANA_VAULT_WEBHOOK using stdlib only; no config = no network",
+    "steps": [
+      "urllib.request POST present",
+      "guarded by flag/env"
+    ],
+    "passes": true
+  },
+  {
+    "id": 6,
+    "category": "functional",
+    "feature": "alerts",
+    "description": "--dry-run flag computes without writing snapshot/alerts",
+    "steps": [
+      "dry-run branch present"
+    ],
+    "passes": true
+  },
+  {
+    "id": 7,
+    "category": "functional",
+    "feature": "buylist",
+    "description": "preprocess.py compiles after buylist changes (py_compile clean)",
+    "steps": [
+      "python3 -m py_compile preprocess.py"
+    ],
+    "passes": true
+  },
+  {
+    "id": 8,
+    "category": "functional",
+    "feature": "buylist",
+    "description": "build_buylist_margins() computes best_retail, ck_buylist, margin_abs, margin_pct with divide-by-zero guards",
+    "steps": [
+      "function defined",
+      "None/zero guards present"
+    ],
+    "passes": true
+  },
+  {
+    "id": 9,
+    "category": "functional",
+    "feature": "buylist",
+    "description": "write_output emits buylist_margins.json and main() passes it in both modes",
+    "steps": [
+      "write_output param + write present",
+      "main() call present"
+    ],
+    "passes": true
+  },
+  {
+    "id": 10,
+    "category": "functional",
+    "feature": "buylist",
+    "description": "Output sorted by margin_pct desc, capped at 200 (mirrors find_arbitrage)",
+    "steps": [
+      "sort + slice present"
+    ],
+    "passes": true
+  },
+  {
+    "id": 11,
+    "category": "functional",
+    "feature": "events",
+    "description": "Dashboard has an Events nav tab and #view-events section",
+    "steps": [
+      "data-view=events in index.html",
+      "#view-events section present"
+    ],
+    "passes": false
+  },
+  {
+    "id": 12,
+    "category": "functional",
+    "feature": "events",
+    "description": "loadData fetches events.json null-safe and renderEvents renders upcoming/recent/metagame",
+    "steps": [
+      "events.json fetch present",
+      "renderEvents present"
+    ],
+    "passes": false
+  },
+  {
+    "id": 13,
+    "category": "functional",
+    "feature": "events",
+    "description": "Metagame archetypes with in_collection=true are highlighted",
+    "steps": [
+      "in_collection handling present"
+    ],
+    "passes": false
+  },
+  {
+    "id": 14,
+    "category": "functional",
+    "feature": "alerts-ui",
+    "description": "Alerts nav tab + renderAlerts renders alerts.json, each fire links to its card chart",
+    "steps": [
+      "data-view=alerts",
+      "renderAlerts present",
+      "selectCard/switchView('chart') link"
+    ],
+    "passes": false
+  },
+  {
+    "id": 15,
+    "category": "functional",
+    "feature": "buylist-ui",
+    "description": "Buylist nav tab + renderBuylist renders buylist_margins.json as a table",
+    "steps": [
+      "data-view=buylist",
+      "renderBuylist present"
+    ],
+    "passes": false
+  },
+  {
+    "id": 16,
+    "category": "functional",
+    "feature": "build",
+    "description": "Dashboard builds cleanly with Vite (npm run build) after all frontend changes",
+    "steps": [
+      "cd dashboard && npm install && npm run build"
+    ],
+    "passes": false
+  },
+  {
+    "id": 17,
+    "category": "style",
+    "feature": "resilience",
+    "description": "All new views degrade gracefully on missing/empty JSON (no console errors, friendly empty states)",
+    "steps": [
+      "null-safe fetches",
+      "empty-state branches"
+    ],
+    "passes": false
+  },
+  {
+    "id": 18,
+    "category": "style",
+    "feature": "consistency",
+    "description": "New views reuse existing helpers (fmt/fmtPct/switchView/scryfallImage) and match the dark theme; no new deps",
+    "steps": [
+      "helper reuse",
+      "no new package.json deps"
+    ],
+    "passes": false
+  }
 ]
