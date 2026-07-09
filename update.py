@@ -142,6 +142,17 @@ def main():
         print("\n❌ Preprocessor failed!")
         sys.exit(1)
 
+    # Fire price alerts off the fresh signals (best-effort — never fails the update)
+    print()
+    print("🔔 Checking price alerts...")
+    print("-" * 60)
+    alerts_result = subprocess.run(
+        [sys.executable, os.path.join(DATA_DIR, "alerts.py")],
+        cwd=DATA_DIR,
+    )
+    if alerts_result.returncode != 0:
+        print("⚠ Alerts step failed (non-fatal) — data is still fresh.")
+
     print()
     print("=" * 60)
     print("✅ Update complete! Dashboard data is fresh.")
