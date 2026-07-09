@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Mana Vault — Agent Teams Matrix</title>
+<style>
+  :root {
+    --bg: #0b1220; --bg2: #0f172a; --card: #131c31; --card2: #0f1728;
+    --border: rgba(99,102,241,0.18); --border-strong: rgba(99,102,241,0.34);
+    --text: #e2e8f0; --muted: #94a3b8; --dim: #64748b; --strong: #f1f5f9;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: radial-gradient(1200px 600px at 20% -10%, rgba(59,130,246,0.10), transparent),
+                radial-gradient(1000px 500px at 100% 0%, rgba(167,139,250,0.08), transparent),
+                var(--bg);
+    color: var(--text);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    min-height: 100vh;
+  }
+  .wrap { max-width: 1400px; margin: 0 auto; padding: 32px 22px 80px; }
+  .eyebrow { text-transform: uppercase; letter-spacing: 0.14em; font-size: 11px; font-weight: 700; color: #a78bfa; }
+  h1 { font-size: 30px; margin: 8px 0 6px; color: var(--strong); letter-spacing: -0.01em; }
+  .lede { color: var(--muted); max-width: 860px; font-size: 15px; }
+  .lede b { color: var(--text); }
+
+  .guilds { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px,1fr)); gap: 14px; margin: 22px 0 10px; }
+  .guild { background: linear-gradient(180deg, var(--card), var(--card2)); border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: var(--radius); padding: 14px 16px; }
+  .guild h2 { margin: 0 0 2px; font-size: 15px; color: var(--strong); display: flex; align-items: center; gap: 8px; }
+  .guild p { margin: 0 0 10px; font-size: 12.5px; color: var(--muted); }
+  .agents { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { font-size: 11.5px; font-family: ui-monospace, "SF Mono", Menlo, monospace; background: color-mix(in srgb, var(--accent) 12%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 32%, transparent); border-radius: 6px; padding: 3px 8px; color: var(--text); cursor: pointer; user-select: none; transition: background .12s, border-color .12s; }
+  .chip:hover { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+  .chip.dim { opacity: 0.28; }
+  .chip.on { background: rgba(167,139,250,0.28); border-color: #a78bfa; color: #fff; }
+  .chip.heavy::after { content: "●"; font-size: 8px; margin-left: 5px; vertical-align: middle; color: var(--accent); }
+
+  .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 16px 0 14px; }
+  .hint { font-size: 12.5px; color: var(--dim); }
+  .btn { background: var(--card); border: 1px solid var(--border); border-radius: 10px; color: var(--muted); padding: 8px 13px; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+  .btn:hover { color: var(--text); border-color: var(--border-strong); }
+
+  .matrix-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); }
+  table { border-collapse: collapse; width: 100%; min-width: 820px; }
+  th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--border); border-right: 1px solid rgba(99,102,241,0.08); }
+  thead th { position: sticky; top: 0; background: var(--bg2); z-index: 2; font-size: 12px; color: var(--strong); }
+  thead th .gemoji { margin-right: 6px; }
+  thead th.gh { border-bottom: 2px solid var(--accent); }
+  tbody th { position: sticky; left: 0; background: var(--bg2); z-index: 1; min-width: 190px; }
+  .dom-name { font-size: 13px; color: var(--strong); font-weight: 600; }
+  .dom-mandate { font-size: 11px; color: var(--dim); margin-top: 2px; max-width: 210px; }
+  td.cell { min-width: 170px; }
+  td.cell .agents { gap: 5px; }
+  td.empty { color: var(--dim); font-size: 11px; }
+
+  .seams { margin-top: 24px; background: linear-gradient(180deg, rgba(24,32,54,0.7), rgba(15,23,42,0.5)); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
+  .seams h2 { margin: 0 0 4px; font-size: 16px; color: var(--strong); }
+  .seams > p { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
+  .seamgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px,1fr)); gap: 10px; }
+  .seam { background: rgba(8,12,33,0.5); border: 1px solid var(--border); border-radius: 10px; padding: 11px 13px; font-size: 12.5px; }
+  .seam.warn { border-color: rgba(251,191,36,0.4); }
+  .seam b { color: var(--strong); }
+  .seam .owns { color: #a78bfa; font-family: ui-monospace, monospace; font-size: 11.5px; }
+  .stats { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 4px; }
+  .stat { background: var(--card); border: 1px solid var(--border); border-radius: 999px; padding: 6px 14px; font-size: 13px; }
+  .stat b { color: var(--strong); }
+  footer { margin-top: 26px; color: var(--dim); font-size: 12px; text-align: center; }
+  a { color: #818cf8; }
+  @media (max-width: 640px) { h1 { font-size: 24px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Mana Vault · Internal</div>
+  <h1>Agent Teams Matrix</h1>
+  <p class="lede">Three <b>craft guilds</b> (horizontal — the <i>how</i>) overlaid on the <b>7 domain territories</b> from the <a href="system-map.html" style="color:#818cf8">system map</a> (vertical — the <i>where</i>). Each cell shows which agents from that guild work in that domain; a <b>●</b> marks the guild's primary owner there. Click any agent to trace it across the whole project.</p>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="guilds" id="guilds"></div>
+
+  <div class="toolbar">
+    <span class="hint">Click an agent chip to highlight everywhere it appears · </span>
+    <button class="btn" id="clear">Clear highlight</button>
+  </div>
+
+  <div class="matrix-scroll">
+    <table id="matrix"></table>
+  </div>
+
+  <section class="seams">
+    <h2>🔗 The 5 seams — owned by 🧭 Product &amp; Ops</h2>
+    <p>Where a change in one domain ripples into others. <code>release-captain</code> / <code>scraper-steward</code> run the ripple check; the flagged agents co-sign.</p>
+    <div class="seamgrid" id="seamgrid"></div>
+  </section>
+
+  <footer id="footer"></footer>
+</div>
+
+<script>
+const GUILDS = [
+  { key:'data', emoji:'🔬', accent:'#f43f5e', name:'Data & Math',
+    blurb:'Is the price data extracted right and the indicator math correct? Streaming, TA, golden-file tests.',
+    agents:['price-extractor','indicator-verifier','pipeline-tester'] },
+  { key:'ui', emoji:'🎨', accent:'#22d3ee', name:'UI / UX',
+    blurb:'Vanilla-JS dashboard, TradingView charts, dark glassmorphism, mobile & a11y.',
+    agents:['dashboard-builder','chart-craftsman','design-critic'] },
+  { key:'ops', emoji:'🧭', accent:'#fbbf24', name:'Product & Ops',
+    blurb:'What to build, scraper resilience, Docker / Pages deploy, multi-user safety.',
+    agents:['product-strategist','scraper-steward','release-captain'] },
+];
+
+// domain → guildKey → agents ; heavy = primary owner marks
+const DOMAINS = [
+  { name:'📈 Portfolio & Collection', mandate:'Portfolio value, P&L, breakdowns, browser',
+    m:{ data:['indicator-verifier','pipeline-tester'], ui:['dashboard-builder','design-critic'], ops:['product-strategist'] },
+    heavy:['dashboard-builder'] },
+  { name:'📊 Price Charts & Signals', mandate:'Per-card charts + TA signals',
+    m:{ data:['indicator-verifier','pipeline-tester'], ui:['chart-craftsman','design-critic'], ops:['product-strategist'] },
+    heavy:['indicator-verifier','chart-craftsman'] },
+  { name:'🔍 Movers & Arbitrage', mandate:'Discovery: movers + cross-vendor gaps',
+    m:{ data:['indicator-verifier','pipeline-tester'], ui:['dashboard-builder'], ops:['scraper-steward','product-strategist'] },
+    heavy:['scraper-steward'] },
+  { name:'📅 Events & Metagame', mandate:'magic.gg + MTGTop8 (⚠ view not wired)',
+    m:{ data:['pipeline-tester'], ui:['dashboard-builder'], ops:['scraper-steward','product-strategist'] },
+    heavy:['scraper-steward'] },
+  { name:'🗄️ Data Pipeline & Ingest', mandate:'The 1.2GB streaming core',
+    m:{ data:['price-extractor','indicator-verifier','pipeline-tester'], ui:[], ops:['release-captain','scraper-steward'] },
+    heavy:['price-extractor'] },
+  { name:'☁️ Multi-User API & Deploy', mandate:'Vault uploads, Docker, Pages',
+    m:{ data:['pipeline-tester'], ui:['dashboard-builder','design-critic'], ops:['release-captain','product-strategist'] },
+    heavy:['release-captain'] },
+  { name:'💡 TCG Business Toolkit', mandate:'Static ideas microsite',
+    m:{ data:[], ui:['dashboard-builder','design-critic'], ops:['product-strategist','release-captain'] },
+    heavy:['product-strategist'] },
+];
+
+const SEAMS = [
+  { t:'price_history.json (~140MB)', d:'produced by the pipeline, lazy-loaded by Charts — per-card field shape is a contract. Change it and the chart loader breaks.', a:'price-extractor · chart-craftsman' },
+  { t:'Card identity bridge', d:'Scryfall ID keys the frontend; MTGJSON UUID keys prices. scryfall_to_mtgjson.json maps them — drift silently drops cards.', a:'price-extractor · dashboard-builder' },
+  { t:'Events → dashboard (GAP)', d:'events.json is generated but NO Events tab exists (only 6 views). README promises it; frontend doesn’t render it. First thing to close.', a:'scraper-steward · dashboard-builder', warn:true },
+  { t:'API ↔ pipeline CLI', d:'api/main.py shells out to preprocess.py --csv/--output per upload. A pipeline arg change breaks vault creation.', a:'release-captain · price-extractor' },
+  { t:'Name-based matching', d:'MTGStocks movers & MTGTop8 results join the collection by card NAME — foils/sets/punctuation mismatches drop matches.', a:'scraper-steward · indicator-verifier' },
+];
+
+const accentOf = {};
+GUILDS.forEach(g => g.agents.forEach(a => accentOf[a] = g.accent));
+
+const gwrap = document.getElementById('guilds');
+GUILDS.forEach(g => {
+  const el = document.createElement('div');
+  el.className = 'guild'; el.style.setProperty('--accent', g.accent);
+  el.innerHTML = `<h2><span>${g.emoji}</span>${g.name}</h2><p>${g.blurb}</p>
+    <div class="agents">${g.agents.map(a=>chip(a)).join('')}</div>`;
+  gwrap.appendChild(el);
+});
+
+function chip(a, heavy) {
+  return `<span class="chip${heavy?' heavy':''}" data-agent="${a}" style="--accent:${accentOf[a]}">${a}</span>`;
+}
+
+const table = document.getElementById('matrix');
+let head = '<thead><tr><th>Domain ↓ &nbsp; Guild →</th>' +
+  GUILDS.map(g=>`<th class="gh" style="--accent:${g.accent};border-bottom-color:${g.accent}"><span class="gemoji">${g.emoji}</span>${g.name}</th>`).join('') + '</tr></thead>';
+let rows = DOMAINS.map(d => {
+  const cells = GUILDS.map(g => {
+    const list = d.m[g.key] || [];
+    if (!list.length) return '<td class="cell empty">—</td>';
+    return `<td class="cell"><div class="agents">${list.map(a=>chip(a, d.heavy.includes(a))).join('')}</div></td>`;
+  }).join('');
+  return `<tr><th><div class="dom-name">${d.name}</div><div class="dom-mandate">${d.mandate}</div></th>${cells}</tr>`;
+}).join('');
+table.innerHTML = head + '<tbody>' + rows + '</tbody>';
+
+document.getElementById('seamgrid').innerHTML = SEAMS.map(s =>
+  `<div class="seam${s.warn?' warn':''}"><b>${s.t}</b> — ${s.d}<div class="owns">${s.a}</div></div>`).join('');
+
+document.getElementById('stats').innerHTML = [
+  ['3','craft guilds'],['9','agents'],['7','domain territories'],['5','cross-domain seams']
+].map(([n,l])=>`<span class="stat"><b>${n}</b> ${l}</span>`).join('');
+
+let active = null;
+document.addEventListener('click', e => {
+  const c = e.target.closest('.chip');
+  if (!c) return;
+  const a = c.dataset.agent;
+  active = (active === a) ? null : a;
+  applyHighlight();
+});
+document.getElementById('clear').onclick = () => { active = null; applyHighlight(); };
+function applyHighlight() {
+  document.querySelectorAll('.chip').forEach(c => {
+    c.classList.remove('on','dim');
+    if (!active) return;
+    if (c.dataset.agent === active) c.classList.add('on'); else c.classList.add('dim');
+  });
+}
+
+document.getElementById('footer').innerHTML = '3 craft guilds × 7 domains · ● = primary owner of that craft in that domain · pairs with reference/system-map.html';
+</script>
+</body>
+</html>
