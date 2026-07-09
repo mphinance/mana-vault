@@ -638,7 +638,56 @@ def find_arbitrage(card_analytics):
     return opportunities[:200]
 
 
-def write_output(output_dir, portfolio, card_analytics, movers=None, arbitrage=None):
+def build_buylist_margins(card_analytics):
+    """Surface CardKingdom buylist vs best retail — the LGS 'Buylist Sanity Check' wedge."""
+    print("🏪 Building buylist-vs-retail margins...")
+
+    margins = []
+
+    for card in card_analytics:
+        vp = card.get("vendor_prices", {})
+        if not vp:
+            continue
+
+        finish = card["finish"]
+        ck_buylist = vp.get(f"cardkingdom_buylist_{finish}")
+        if not ck_buylist or ck_buylist <= 0:
+            continue
+
+        retail_options = [
+            ("tcgplayer", vp.get(f"tcgplayer_retail_{finish}")),
+            ("cardkingdom", vp.get(f"cardkingdom_retail_{finish}")),
+            ("cardmarket", vp.get(f"cardmarket_retail_{finish}")),
+        ]
+        retail_options = [(v, p) for v, p in retail_options if p]
+        if not retail_options:
+            continue
+
+        retail_vendor, best_retail = max(retail_options, key=lambda x: x[1])
+
+        margin_abs = best_retail - ck_buylist
+        margin_pct = margin_abs / ck_buylist * 100
+
+        margins.append({
+            "name": card["name"],
+            "set_code": card["set_code"],
+            "foil": card["foil"],
+            "scryfall_id": card["scryfall_id"],
+            "binder": card["binder"],
+            "quantity": card["quantity"],
+            "best_retail": round(best_retail, 2),
+            "retail_vendor": retail_vendor,
+            "ck_buylist": round(ck_buylist, 2),
+            "margin_abs": round(margin_abs, 2),
+            "margin_pct": round(margin_pct, 1),
+        })
+
+    margins.sort(key=lambda x: x["margin_pct"], reverse=True)
+    print(f"  Found {len(margins)} cards with buylist + retail")
+    return margins[:200]
+
+
+def write_output(output_dir, portfolio, card_analytics, movers=None, arbitrage=None, buylist_margins=None):
     """Write all output JSON files to the specified directory."""
     print("\n💾 Writing output files...")
     os.makedirs(output_dir, exist_ok=True)
@@ -684,7 +733,12 @@ def write_output(output_dir, portfolio, card_analytics, movers=None, arbitrage=N
         with open(os.path.join(output_dir, "arbitrage.json"), "w") as f:
             json.dump(arbitrage, f)
         print(f"  arbitrage.json: {os.path.getsize(os.path.join(output_dir, 'arbitrage.json')) / 1024:.0f}KB")
-    
+
+    if buylist_margins is not None:
+        with open(os.path.join(output_dir, "buylist_margins.json"), "w") as f:
+            json.dump(buylist_margins, f)
+        print(f"  buylist_margins.json: {os.path.getsize(os.path.join(output_dir, 'buylist_margins.json')) / 1024:.0f}KB")
+
     print(f"\n✅ Preprocessing complete!")
     print(f"   Output: {output_dir}")
     print(f"   Cards with tech indicators: {sum(1 for c in cards_detail.values() if c.get('technicals'))}")
@@ -710,13 +764,14 @@ def main():
     prices = extract_prices_fast(cards)
     portfolio, card_analytics = build_portfolio_analytics(cards, prices)
     arbitrage = find_arbitrage(card_analytics)
-    
+    buylist_margins = build_buylist_margins(card_analytics)
+
     # Movers only in default mode (they're global, not per-user)
     movers = None
     if not per_user:
         movers = parse_mtgstocks_movers(cards)
-    
-    write_output(output_dir, portfolio, card_analytics, movers=movers, arbitrage=arbitrage)
+
+    write_output(output_dir, portfolio, card_analytics, movers=movers, arbitrage=arbitrage, buylist_margins=buylist_margins)
 
 
 if __name__ == "__main__":

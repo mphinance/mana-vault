@@ -1209,3 +1209,174 @@ body::before {
   border-radius: 4px;
   display: inline-block;
 }
+
+/* ═══ Events View ═══ */
+.events-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap);
+}
+
+.events-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--gap);
+}
+
+.event-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.event-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.event-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.event-badge {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--accent-glow);
+  color: var(--accent);
+}
+
+.event-date {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.event-card-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  line-height: 1.3;
+}
+
+.event-name-link { color: var(--text-primary); text-decoration: none; }
+.event-name-link:hover { color: var(--accent); }
+
+.event-card-meta {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: 6px;
+}
+
+.events-recent-list {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.events-recent-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.events-recent-name { font-size: 0.85rem; font-weight: 500; }
+.events-recent-name a { color: var(--text-primary); text-decoration: none; }
+.events-recent-name a:hover { color: var(--accent); }
+
+.events-recent-fmt {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  padding: 2px 8px;
+  border: 1px solid var(--glass-border);
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.events-metagame {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.meta-format {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.meta-format-name {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.meta-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.meta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--glass-border);
+}
+
+.meta-chip a { color: var(--text-secondary); text-decoration: none; }
+.meta-chip a:hover { color: var(--accent); }
+
+.meta-chip.owned {
+  background: var(--gold-dim);
+  border-color: rgba(240, 180, 0, 0.3);
+}
+
+.meta-chip.owned a { color: var(--gold); }
+
+.meta-own-tag {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+/* ═══ Alerts View ═══ */
+#alerts-list { max-height: 640px; }
+
+.alert-date {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-left: 8px;
+}
+
+.alert-meta {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-left: 8px;
+}
+
+/* ═══ Buylist View ═══ */
+#buylist-table-wrap {
+  max-height: 640px;
+  overflow-y: auto;
+}

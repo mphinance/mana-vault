@@ -12,6 +12,9 @@ let portfolio = null;
 let cards = [];
 let movers = [];
 let arbitrage = [];
+let events = null;
+let alerts = null;
+let buylist = [];
 let priceHistory = null;  // Lazy loaded
 let selectedCard = null;
 let priceChart = null;
@@ -43,19 +46,25 @@ async function loadData() {
     fetch(`${base}/portfolio.json`).then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); }),
     fetch(`${base}/cards.json`).then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); }),
     fetch(`${base}/arbitrage.json`).then(r => r.ok ? r.json() : []),
+    fetch(`${base}/events.json`).then(r => r.ok ? r.json() : null).catch(() => null),
+    fetch(`${base}/alerts.json`).then(r => r.ok ? r.json() : null).catch(() => null),
+    fetch(`${base}/buylist_margins.json`).then(r => r.ok ? r.json() : []).catch(() => []),
   ];
-  
+
   // Movers only exist for default (owner) data
   if (!currentVaultSlug) {
     fetches.push(fetch(`${base}/movers.json`).then(r => r.ok ? r.json() : []));
   }
-  
+
   const results = await Promise.all(fetches);
-  
+
   portfolio = results[0];
   cards = results[1];
   arbitrage = results[2];
-  movers = results[3] || [];
+  events = results[3] || null;
+  alerts = results[4] || null;
+  buylist = results[5] || [];
+  movers = results[6] || [];
   
   // Reset lazy-loaded data
   priceHistory = null;
@@ -134,6 +143,9 @@ function switchView(view) {
   if (view === 'signals') renderSignals();
   if (view === 'arbitrage') renderArbitrage();
   if (view === 'collection') renderCollection();
+  if (view === 'events') renderEvents();
+  if (view === 'alerts') renderAlerts();
+  if (view === 'buylist') renderBuylist();
 }
 
 // ═══════════════════════════════════
@@ -953,6 +965,211 @@ function renderCollection() {
   $('#collection-sort').addEventListener('change', applyFilters);
   
   applyFilters();
+}
+
+// ═══════════════════════════════════
+// Events View
+// ═══════════════════════════════════
+function eventTypeBadge(type) {
+  const label = (type || 'event').replace(/_/g, ' ');
+  return `<span class="event-badge">${label}</span>`;
+}
+
+function renderEvents() {
+  const emptyState = (msg) =>
+    `<div style="color: var(--text-muted); font-size: 0.85rem; padding: 16px;">${msg}</div>`;
+
+  // Upcoming
+  const upcomingEl = $('#events-upcoming');
+  const upcoming = (events && Array.isArray(events.upcoming)) ? events.upcoming : [];
+  if (upcoming.length === 0) {
+    upcomingEl.innerHTML = emptyState('No upcoming events — run scrape_events.py after a data refresh.');
+  } else {
+    upcomingEl.innerHTML = upcoming.map(e => {
+      const name = e.name || 'Untitled event';
+      const dates = e.dates || '';
+      const location = e.location || '';
+      const url = e.url || '';
+      const nameHtml = url
+        ? `<a href="${url}" target="_blank" rel="noopener" class="event-name-link">${name}</a>`
+        : `<span class="event-name-link">${name}</span>`;
+      const meta = [dates, location].filter(Boolean).join(' · ');
+      return `
+        <div class="event-card">
+          <div class="event-card-top">
+            ${eventTypeBadge(e.type)}
+            ${dates ? `<span class="event-date">${dates}</span>` : ''}
+          </div>
+          <div class="event-card-name">${nameHtml}</div>
+          ${meta ? `<div class="event-card-meta">${meta}</div>` : ''}
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Recent tournament results
+  const recentEl = $('#events-recent');
+  const recent = (events && Array.isArray(events.recent_events)) ? events.recent_events : [];
+  if (recent.length === 0) {
+    recentEl.innerHTML = emptyState('No recent tournament results available.');
+  } else {
+    recentEl.innerHTML = recent.map(e => {
+      const name = e.name || 'Event';
+      const fmt = e.format || '';
+      const url = e.url || '';
+      const nameHtml = url
+        ? `<a href="${url}" target="_blank" rel="noopener">${name}</a>`
+        : name;
+      return `
+        <div class="events-recent-item">
+          <div class="events-recent-name">${nameHtml}</div>
+          ${fmt ? `<span class="events-recent-fmt">${fmt}</span>` : ''}
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Metagame snapshot
+  const metaEl = $('#events-metagame');
+  const meta = (events && events.metagame && typeof events.metagame === 'object') ? events.metagame : {};
+  const formats = Object.keys(meta);
+  if (formats.length === 0) {
+    metaEl.innerHTML = emptyState('No metagame data available.');
+  } else {
+    metaEl.innerHTML = formats.map(fmtName => {
+      const archs = Array.isArray(meta[fmtName]) ? meta[fmtName] : [];
+      const chips = archs.map(a => {
+        const aname = a.name || 'Archetype';
+        const owned = a.in_collection === true;
+        const url = a.url || '';
+        const inner = url
+          ? `<a href="${url}" target="_blank" rel="noopener">${aname}</a>`
+          : aname;
+        return `<span class="meta-chip${owned ? ' owned' : ''}">${inner}${owned ? ' <span class="meta-own-tag">owned</span>' : ''}</span>`;
+      }).join('');
+      return `
+        <div class="meta-format">
+          <div class="meta-format-name">${fmtName}</div>
+          <div class="meta-chip-row">${chips || emptyState('No archetypes.')}</div>
+        </div>
+      `;
+    }).join('');
+  }
+}
+
+// ═══════════════════════════════════
+// Alerts View
+// ═══════════════════════════════════
+function renderAlerts() {
+  const container = $('#alerts-list');
+  const fires = (alerts && Array.isArray(alerts.alerts)) ? alerts.alerts : [];
+  const count = alerts && typeof alerts.count === 'number' ? alerts.count : fires.length;
+
+  if (!alerts || count === 0 || fires.length === 0) {
+    container.innerHTML = '<div style="color: var(--text-muted); font-size: 0.85rem; padding: 16px;">No new alerts — run alerts.py after a data refresh.</div>';
+    return;
+  }
+
+  container.innerHTML = fires.map(a => {
+    const type = (a.type || '');
+    const cls = type.includes('bullish') || type.includes('oversold') || type.includes('bb_lower') ? 'bullish' :
+                type.includes('bearish') || type.includes('overbought') || type.includes('bb_upper') ? 'bearish' : 'neutral';
+    const scryfall = a.scryfall_id || '';
+    const name = a.name || 'Card';
+    const label = a.label || type || 'Signal';
+    const date = a.date || '';
+    const setMeta = [a.set_code, a.foil ? 'foil' : null, a.binder].filter(Boolean).join(' · ');
+    return `
+      <div class="signal-card-item" data-scryfall="${scryfall}">
+        ${scryfall ? `<img class="signal-card-thumb" src="${scryfallImage(scryfall)}" alt="" loading="lazy" />` : '<div class="signal-card-thumb"></div>'}
+        <div class="signal-card-info">
+          <div class="signal-card-name">${name}</div>
+          <div class="signal-card-signal">
+            <span class="signal-badge ${cls}">${label}</span>
+            ${date ? `<span class="alert-date">${date}</span>` : ''}
+            ${setMeta ? `<span class="alert-meta">${setMeta}</span>` : ''}
+          </div>
+        </div>
+        <div class="signal-card-price">${fmt(a.current_price)}</div>
+      </div>
+    `;
+  }).join('');
+
+  container.querySelectorAll('.signal-card-item').forEach(el => {
+    if (!el.dataset.scryfall) return;
+    el.addEventListener('click', () => {
+      switchView('chart');
+      selectCard(el.dataset.scryfall);
+    });
+  });
+}
+
+// ═══════════════════════════════════
+// Buylist Margin View
+// ═══════════════════════════════════
+let buylistSort = { key: 'margin_pct', dir: 'desc' };
+
+function renderBuylist() {
+  const tbody = $('#buylist-tbody');
+  const rows = Array.isArray(buylist) ? buylist : [];
+
+  if (rows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="color: var(--text-muted); text-align: center; padding: 24px;">No buylist margins — run preprocess.py after a data refresh.</td></tr>';
+    return;
+  }
+
+  const { key, dir } = buylistSort;
+  const sorted = [...rows].sort((a, b) => {
+    let av = a[key];
+    let bv = b[key];
+    if (key === 'name') {
+      av = (av || '').toLowerCase();
+      bv = (bv || '').toLowerCase();
+      const cmp = av.localeCompare(bv);
+      return dir === 'asc' ? cmp : -cmp;
+    }
+    av = av ?? -Infinity;
+    bv = bv ?? -Infinity;
+    return dir === 'asc' ? av - bv : bv - av;
+  });
+
+  tbody.innerHTML = sorted.map(r => {
+    const scryfall = r.scryfall_id || '';
+    const name = r.name || 'Card';
+    const nameHtml = scryfall
+      ? `<a href="https://scryfall.com/card/${scryfall}" target="_blank" rel="noopener"><strong>${name}</strong></a>`
+      : `<strong>${name}</strong>`;
+    return `
+      <tr>
+        <td>${nameHtml}</td>
+        <td>${r.set_code || '—'}${r.foil ? ' <span class="highlight">foil</span>' : ''}</td>
+        <td style="font-family: var(--font-mono)">${fmt(r.best_retail)}</td>
+        <td>${r.retail_vendor || '—'}</td>
+        <td style="font-family: var(--font-mono)">${fmt(r.ck_buylist)}</td>
+        <td class="positive" style="font-family: var(--font-mono); font-weight: 600">${fmt(r.margin_abs)}</td>
+        <td class="positive" style="font-family: var(--font-mono); font-weight: 600">${fmtPct(r.margin_pct)}</td>
+        <td style="font-size: 0.75rem; color: var(--text-muted)">${r.binder || '—'}</td>
+      </tr>
+    `;
+  }).join('');
+
+  // Sortable headers (bind once)
+  const table = $('#buylist-table');
+  if (table && !table.dataset.sortBound) {
+    table.dataset.sortBound = '1';
+    table.querySelectorAll('th[data-sort]').forEach(th => {
+      th.addEventListener('click', () => {
+        const k = th.dataset.sort;
+        if (buylistSort.key === k) {
+          buylistSort.dir = buylistSort.dir === 'asc' ? 'desc' : 'asc';
+        } else {
+          buylistSort.key = k;
+          buylistSort.dir = k === 'name' ? 'asc' : 'desc';
+        }
+        renderBuylist();
+      });
+    });
+  }
 }
 
 // ═══════════════════════════════════

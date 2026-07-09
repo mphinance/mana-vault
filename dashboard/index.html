@@ -28,6 +28,9 @@
         <button class="nav-btn" data-view="signals">Signals</button>
         <button class="nav-btn" data-view="arbitrage">Arbitrage</button>
         <button class="nav-btn" data-view="collection">Collection</button>
+        <button class="nav-btn" data-view="events">Events</button>
+        <button class="nav-btn" data-view="alerts">Alerts</button>
+        <button class="nav-btn" data-view="buylist">Buylist</button>
       </nav>
       <div class="header-right">
         <div class="header-stat" id="header-value">
@@ -302,6 +305,71 @@
           </table>
         </div>
         <div id="collection-pagination" class="pagination"></div>
+      </div>
+    </section>
+
+    <!-- Events View -->
+    <section id="view-events" class="view">
+      <div class="events-grid">
+        <div class="panel full-width">
+          <div class="panel-header">
+            <h2>🗓️ Upcoming Events</h2>
+            <p class="panel-sub">Premier play from the magic.gg schedule. Plan buys around demand spikes.</p>
+          </div>
+          <div id="events-upcoming" class="events-card-grid"></div>
+        </div>
+        <div class="panel half-width">
+          <div class="panel-header">
+            <h2>🏆 Recent Tournament Results</h2>
+            <p class="panel-sub">Latest results pulled from MTGTop8.</p>
+          </div>
+          <div id="events-recent" class="events-recent-list"></div>
+        </div>
+        <div class="panel half-width">
+          <div class="panel-header">
+            <h2>📊 Metagame Snapshot</h2>
+            <p class="panel-sub">Top archetypes by format. <span class="highlight">Highlighted</span> = you own the deck</p>
+          </div>
+          <div id="events-metagame" class="events-metagame"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Alerts View -->
+    <section id="view-alerts" class="view">
+      <div class="panel full-width">
+        <div class="panel-header">
+          <h2>🔔 Price Alerts</h2>
+          <p class="panel-sub">New technical signal fires since the last data refresh. Click a fire to jump to its chart.</p>
+        </div>
+        <div id="alerts-list" class="signal-card-list"></div>
+      </div>
+    </section>
+
+    <!-- Buylist Margin View -->
+    <section id="view-buylist" class="view">
+      <div class="panel full-width">
+        <div class="panel-header">
+          <h2>🏬 Buylist vs Retail Margin</h2>
+          <p class="panel-sub">What a store captures buying your cards at CardKingdom buylist and reselling at retail. Sorted by margin %.</p>
+        </div>
+        <div id="buylist-table-wrap">
+          <table id="buylist-table" class="data-table">
+            <thead>
+              <tr>
+                <th data-sort="name">Card</th>
+                <th>Set</th>
+                <th data-sort="best_retail">Best Retail</th>
+                <th>Retail Vendor</th>
+                <th data-sort="ck_buylist">CK Buylist</th>
+                <th data-sort="margin_abs">Margin $</th>
+                <th data-sort="margin_pct">Margin %</th>
+                <th>Binder</th>
+              </tr>
+            </thead>
+            <tbody id="buylist-tbody"></tbody>
+          </table>
+        </div>
       </div>
     </section>
 
