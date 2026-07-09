@@ -848,6 +848,7 @@ async function renderSignals() {
   renderSignalList(bearishSignals, '#bearish-signals');
 
   renderSellQueue(history);
+  renderBuyQueue(history);
 }
 
 // ═══════════════════════════════════
@@ -904,6 +905,72 @@ function renderSellQueue(history) {
         <div class="signal-card-signal">x${r.quantity} · <a href="https://scryfall.com/card/${r.scryfall_id}" target="_blank" rel="noopener">Scryfall</a></div>
       </div>
       <div class="signal-card-price ${pnlClass(r.impact)}">${fmt(r.impact)}</div>
+    </div>
+  `).join('');
+
+  container.querySelectorAll('.signal-card-item').forEach(el => {
+    el.addEventListener('click', (e) => {
+      if (e.target.closest('a')) return;
+      switchView('chart');
+      selectCard(el.dataset.scryfall);
+    });
+  });
+}
+
+// ═══════════════════════════════════
+// Buy Queue (within Signals view)
+// ═══════════════════════════════════
+const BUY_SIGNAL_TYPES = new Set(['bullish_cross', 'oversold', 'bb_lower_break']);
+
+function renderBuyQueue(history) {
+  const container = $('#buy-queue');
+  if (!container) return;
+
+  const emptyState = (msg) =>
+    `<div style="color: var(--text-muted); font-size: 0.85rem; padding: 16px;">${msg}</div>`;
+
+  if (!Array.isArray(cards) || cards.length === 0) {
+    container.innerHTML = emptyState('No holdings — import a collection to build a buy queue.');
+    return;
+  }
+
+  const rows = [];
+  for (const card of cards) {
+    if (!card.quantity || card.quantity <= 0) continue;
+    const detail = history && history[card.scryfall_id];
+    const signals = detail?.technicals?.signals;
+    if (!Array.isArray(signals) || signals.length === 0) continue;
+
+    // Latest signal only
+    const latest = signals[signals.length - 1];
+    if (!latest || !BUY_SIGNAL_TYPES.has(latest.type)) continue;
+
+    const conviction = (card.current_price || 0) * (card.quantity || 0);
+    rows.push({
+      name: card.name,
+      scryfall_id: card.scryfall_id,
+      current_price: card.current_price,
+      quantity: card.quantity,
+      signal: latest,
+      conviction,
+    });
+  }
+
+  if (rows.length === 0) {
+    container.innerHTML = emptyState('No owned cards with a bullish latest signal. Nothing to add right now.');
+    return;
+  }
+
+  rows.sort((a, b) => b.conviction - a.conviction);
+
+  container.innerHTML = rows.slice(0, 30).map(r => `
+    <div class="signal-card-item" data-scryfall="${r.scryfall_id}">
+      <img class="signal-card-thumb" src="${scryfallImage(r.scryfall_id)}" alt="" loading="lazy" />
+      <div class="signal-card-info">
+        <div class="signal-card-name"><strong>${r.name}</strong> <span class="signal-badge bullish">${r.signal.label}</span></div>
+        <div class="signal-card-signal">x${r.quantity} · <a href="https://scryfall.com/card/${r.scryfall_id}" target="_blank" rel="noopener">Scryfall</a></div>
+      </div>
+      <div class="signal-card-price positive">${fmt(r.conviction)}</div>
     </div>
   `).join('');
 

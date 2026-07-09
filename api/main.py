@@ -7,6 +7,7 @@ Endpoints:
   GET  /api/export/{slug}       Download original CSV
   GET  /api/vaults              List all vaults (public)
   GET  /api/vaults/{slug}/status  Check processing status
+  GET  /api/digest              Daily digest (markdown + structured sections)
 """
 
 import asyncio
@@ -14,6 +15,7 @@ import json
 import os
 import re
 import subprocess
+import sys
 import time
 import unicodedata
 from datetime import datetime
@@ -38,7 +40,31 @@ BASE_DIR = os.environ.get("MANA_VAULT_BASE", "/app")
 USER_DATA_DIR = os.path.join(BASE_DIR, "user_data")
 PREPROCESS_SCRIPT = os.path.join(BASE_DIR, "preprocess.py")
 
+# Default data dir for the digest when no vault is specified (mirrors where
+# preprocess.py/newsletter.py expect the shared dashboard data to live).
+DEFAULT_DIGEST_DATA_DIR = os.path.join(BASE_DIR, "dashboard", "public", "data")
+
+# newsletter.py lives at BASE_DIR; make it importable regardless of cwd.
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+
+try:
+    from newsletter import build_digest
+except Exception:  # noqa: BLE001 — digest endpoint degrades gracefully if unavailable
+    build_digest = None
+
 os.makedirs(USER_DATA_DIR, exist_ok=True)
+
+
+def _empty_digest():
+    """A valid empty digest payload (used as a never-500 fallback)."""
+    return {
+        "generated_at": datetime.utcnow().isoformat(),
+        "markdown": "",
+        "movers": [],
+        "alerts": [],
+        "buylist": [],
+    }
 
 
 def slugify(text: str) -> str:
@@ -215,6 +241,28 @@ async def list_vaults():
 
             vaults.append(vault)
     return {"vaults": vaults}
+
+
+@app.get("/api/digest")
+async def get_digest(vault: str | None = None):
+    """Build the daily digest (markdown + structured sections).
+
+    If ``vault`` is provided, use USER_DATA_DIR/{vault}/data; otherwise fall
+    back to the shared dashboard data dir. Guarded: a missing dir or any error
+    yields 200 with empty-but-valid sections — never a 500.
+    """
+    if vault:
+        data_dir = os.path.join(USER_DATA_DIR, vault, "data")
+    else:
+        data_dir = DEFAULT_DIGEST_DATA_DIR
+
+    if build_digest is None:
+        return _empty_digest()
+
+    try:
+        return build_digest(data_dir)
+    except Exception:  # noqa: BLE001 — digest must never 500
+        return _empty_digest()
 
 
 @app.get("/api/export/{slug}")

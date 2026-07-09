@@ -137,3 +137,25 @@ touch the frontend. Keep the existing response shape additive (don't remove fiel
   `pnl × quantity` (dollar impact). Reuse `cards.json` (already loaded) joined to signals from the
   signals data already in memory. Framed as "Sell Queue" with dollar impact shown. Degrade
   gracefully when no holdings/signals.
+
+---
+
+## ROUND 3 — buy-side + Discord digest API
+
+### Feature 7 — Buy Queue (frontend, mirrors Sell Queue)
+Inside the Signals view, add a "Buy Queue" panel: OWNED cards (quantity > 0) whose LATEST
+signal is bullish — type in {bullish_cross, oversold, bb_lower_break} — ranked by conviction
+= current_price * quantity (position size at the dip), descending. Reuse the same lazy-loaded
+price history the Sell Queue uses (renderSellQueue's `history` arg); NO new fetch. Row: inline
+<strong> name + Scryfall link + a signal-badge (bullish) + label + fmt(conviction). Row click →
+switchView('chart') + selectCard(scryfall_id). Empty state when no holdings / no bullish signals.
+
+### Feature 8 — GET /api/digest (backend)
+Refactor newsletter.py to expose a pure `build_digest(data_dir) -> dict` returning
+{generated_at, markdown, movers, alerts, buylist} (the CLI keeps working, calling this).
+Add `GET /api/digest` (optionally `?vault=slug` → that vault's data dir, else the default
+dashboard/public/data). Guarded: missing files → empty sections, never 500. Enables the
+"card of the week" Discord use case.
+
+Contract: build_digest must be importable without side effects (no print at import, no argparse
+at import). API returns 200 with empty-but-valid sections when no data exists.

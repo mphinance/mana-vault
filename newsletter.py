@@ -144,7 +144,7 @@ def build_buylist_section(margins):
     return lines
 
 
-def build_digest(movers, alerts_doc, margins, today):
+def build_markdown(movers, alerts_doc, margins, today):
     """Assemble the full Markdown digest string."""
     lines = [f"# 🃏 Mana Vault — Daily Digest ({today})", ""]
     lines += build_movers_section(movers)
@@ -154,6 +154,56 @@ def build_digest(movers, alerts_doc, margins, today):
     lines += build_buylist_section(margins)
     lines.append("")
     return "\n".join(lines).rstrip() + "\n"
+
+
+def build_digest(data_dir):
+    """Pure, side-effect-free digest builder.
+
+    Loads movers.json, alerts.json, and buylist_margins.json from data_dir and
+    returns a dict:
+        {
+          "generated_at": <ISO-8601 UTC>,
+          "markdown": <str>,
+          "movers": [...],   # normalized list (never None)
+          "alerts": [...],   # normalized list (never None)
+          "buylist": [...],  # normalized list (never None)
+        }
+
+    Guarded: a missing/empty/broken data_dir or any missing/broken JSON file
+    degrades that section to an empty list — it never raises.
+    """
+    try:
+        movers_raw = load_json(os.path.join(data_dir, "movers.json"))
+    except Exception:  # noqa: BLE001 — never raise on bad input
+        movers_raw = None
+    try:
+        alerts_doc = load_json(os.path.join(data_dir, "alerts.json"))
+    except Exception:  # noqa: BLE001
+        alerts_doc = None
+    try:
+        margins_raw = load_json(os.path.join(data_dir, "buylist_margins.json"))
+    except Exception:  # noqa: BLE001
+        margins_raw = None
+
+    now = datetime.now(timezone.utc)
+    today = now.date().isoformat()
+    markdown = build_markdown(movers_raw, alerts_doc, margins_raw, today)
+
+    movers = movers_raw if isinstance(movers_raw, list) else []
+    alerts = (
+        alerts_doc.get("alerts")
+        if isinstance(alerts_doc, dict) and isinstance(alerts_doc.get("alerts"), list)
+        else []
+    )
+    buylist = margins_raw if isinstance(margins_raw, list) else []
+
+    return {
+        "generated_at": now.isoformat(),
+        "markdown": markdown,
+        "movers": movers,
+        "alerts": alerts,
+        "buylist": buylist,
+    }
 
 
 def post_webhook(url, markdown):
@@ -189,19 +239,12 @@ def main():
     data_dir = args.data
     webhook = args.webhook or os.environ.get("MANA_VAULT_DIGEST_WEBHOOK")
 
-    movers = load_json(os.path.join(data_dir, "movers.json"))
-    alerts_doc = load_json(os.path.join(data_dir, "alerts.json"))
-    margins = load_json(os.path.join(data_dir, "buylist_margins.json"))
-
-    today = datetime.now(timezone.utc).date().isoformat()
-    digest = build_digest(movers, alerts_doc, margins, today)
+    result = build_digest(data_dir)
+    digest = result["markdown"]
 
     # A "nothing today" digest still has all three empty-state notes; treat a
     # digest with zero data across all sections as empty for webhook purposes.
-    has_movers = bool(movers)
-    has_alerts = bool(isinstance(alerts_doc, dict) and alerts_doc.get("alerts"))
-    has_margins = bool(margins)
-    is_empty = not (has_movers or has_alerts or has_margins)
+    is_empty = not (result["movers"] or result["alerts"] or result["buylist"])
 
     print(digest)
 

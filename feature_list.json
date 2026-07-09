@@ -254,5 +254,58 @@
       "npm --prefix dashboard run build"
     ],
     "passes": true
+  },
+  {
+    "id": 25,
+    "category": "functional",
+    "description": "newsletter.py exposes pure build_digest(data_dir) returning generated_at/markdown/movers/alerts/buylist; CLI still works",
+    "steps": [
+      "import build_digest without side effects",
+      "call on empty dir -> valid dict with empty sections"
+    ],
+    "passes": true
+  },
+  {
+    "id": 26,
+    "category": "functional",
+    "description": "GET /api/digest returns 200 with valid (possibly empty) sections, guarded against missing files",
+    "steps": [
+      "py_compile api/main.py",
+      "route registered",
+      "no 500 on missing data"
+    ],
+    "passes": true
+  },
+  {
+    "id": 27,
+    "category": "functional",
+    "description": "Buy Queue panel in Signals view: owned cards with latest bullish signal ranked by current_price*quantity",
+    "steps": [
+      "renderBuyQueue reuses history arg",
+      "ranked desc",
+      "row click -> chart"
+    ],
+    "passes": true
+  },
+  {
+    "id": 28,
+    "category": "functional",
+    "description": "Buy Queue + digest degrade gracefully with no data (empty states, no console errors, no 500)",
+    "steps": [
+      "empty holdings -> friendly state",
+      "missing json -> empty sections"
+    ],
+    "passes": true
+  },
+  {
+    "id": 29,
+    "category": "style",
+    "description": "Round 3 builds clean: npm run build exit 0, py_compile clean, zero new deps",
+    "steps": [
+      "npm run build",
+      "py_compile",
+      "package.json unchanged"
+    ],
+    "passes": true
   }
 ]
