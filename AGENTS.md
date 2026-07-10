@@ -7,12 +7,17 @@ MTG collection tracker that treats cards like stocks. Vanilla JS + Vite dashboar
 ## Architecture
 
 ```
-ManaBox CSV + AllPrices.json (MTGJSON, 1.2GB)
+ManaBox CSV + Sealed_Products.csv + AllPrices.json (MTGJSON, 1.2GB)
         │
     preprocess.py  ──→  dashboard/public/data/*.json
         │
     dashboard/main.js  ──→  Single-page app (Lightweight Charts)
 ```
+
+Sealed product (boxes, bundles, Secret Lairs) is loaded from `Sealed_Products.csv`
+(root, gitignored) and folded into the same portfolio: `portfolio.json` gains
+`sealed_*` + `grand_total_*` fields, and `sealed.json` holds per-item detail. The
+Portfolio total and header roll singles + sealed into one combined number.
 
 ### Python Scripts (project root)
 - **`preprocess.py`** — Core data pipeline. Single-pass streaming extraction from AllPrices.json. Computes EMA, SMA, RSI, Bollinger Bands. Outputs portfolio.json, cards.json, price_history.json (~140MB), movers.json, arbitrage.json.
@@ -20,7 +25,7 @@ ManaBox CSV + AllPrices.json (MTGJSON, 1.2GB)
 - **`scrape_events.py`** — Playwright scraper for magic.gg schedule + MTGTop8 tournament results/metagame.
 
 ### Dashboard (`dashboard/`)
-- **`main.js`** — All rendering logic. ~1200 lines. Views: Portfolio, Price Charts, Movers, Signals, Arbitrage, Events, Collection.
+- **`main.js`** — All rendering logic. ~1200 lines. Views: Portfolio, Price Charts, Movers, Signals, Arbitrage, Collection, Sealed, Events, Alerts, Buylist, Gallery.
 - **`index.html`** — Single HTML file with all 7 view sections.
 - **`public/style.css`** — Dark theme with CSS custom properties. Glassmorphism + monospace prices.
 
@@ -49,4 +54,5 @@ ManaBox CSV + AllPrices.json (MTGJSON, 1.2GB)
 | `price_history.json` | ~140MB | Per-card price history + technicals |
 | `movers.json` | ~56KB | MTGStocks daily movers |
 | `arbitrage.json` | ~58KB | Cross-vendor price gaps >15% |
+| `sealed.json` | ~1KB | Per-item sealed product analytics |
 | `events.json` | ~16KB | Tournament schedule + metagame |

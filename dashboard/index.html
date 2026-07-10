@@ -28,6 +28,7 @@
         <button class="nav-btn" data-view="signals">Signals</button>
         <button class="nav-btn" data-view="arbitrage">Arbitrage</button>
         <button class="nav-btn" data-view="collection">Collection</button>
+        <button class="nav-btn" data-view="sealed">Sealed</button>
         <button class="nav-btn" data-view="events">Events</button>
         <button class="nav-btn" data-view="alerts">Alerts</button>
         <button class="nav-btn" data-view="buylist">Buylist</button>
@@ -320,6 +321,97 @@
           </table>
         </div>
         <div id="collection-pagination" class="pagination"></div>
+      </div>
+    </section>
+
+    <!-- Sealed Product View -->
+    <section id="view-sealed" class="view">
+      <div class="portfolio-grid">
+        <!-- Sealed KPIs -->
+        <div class="kpi-row">
+          <div class="kpi-card" id="kpi-sealed-current">
+            <div class="kpi-label">Sealed Value</div>
+            <div class="kpi-value">—</div>
+            <div class="kpi-sub">Current market</div>
+          </div>
+          <div class="kpi-card" id="kpi-sealed-cost">
+            <div class="kpi-label">Sealed Cost Basis</div>
+            <div class="kpi-value">—</div>
+            <div class="kpi-sub">Purchase price</div>
+          </div>
+          <div class="kpi-card" id="kpi-sealed-pnl">
+            <div class="kpi-label">Sealed P&L</div>
+            <div class="kpi-value">—</div>
+            <div class="kpi-sub">—</div>
+          </div>
+          <div class="kpi-card" id="kpi-sealed-count">
+            <div class="kpi-label">Sealed Items</div>
+            <div class="kpi-value">—</div>
+            <div class="kpi-sub">— products</div>
+          </div>
+        </div>
+
+        <!-- Combined banner -->
+        <div class="panel full-width" id="sealed-combined-panel">
+          <div class="combined-banner">
+            <div class="combined-part">
+              <span class="combined-label">Singles</span>
+              <span class="combined-value" id="combined-singles">—</span>
+            </div>
+            <span class="combined-op">+</span>
+            <div class="combined-part">
+              <span class="combined-label">Sealed</span>
+              <span class="combined-value" id="combined-sealed">—</span>
+            </div>
+            <span class="combined-op">=</span>
+            <div class="combined-part combined-total">
+              <span class="combined-label">Total Collection</span>
+              <span class="combined-value" id="combined-total">—</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- By product type -->
+        <div class="panel half-width">
+          <div class="panel-header">
+            <h2>📦 By Product Type</h2>
+          </div>
+          <div id="sealed-type-breakdown" class="breakdown-list"></div>
+        </div>
+
+        <!-- Top sealed positions -->
+        <div class="panel half-width">
+          <div class="panel-header">
+            <h2>🏆 Top Positions</h2>
+          </div>
+          <div id="sealed-top" class="breakdown-list"></div>
+        </div>
+
+        <!-- Sealed table -->
+        <div class="panel full-width">
+          <div class="panel-header">
+            <h2>🎁 Sealed Product</h2>
+            <p class="panel-sub">Boxes, bundles, and Secret Lairs — tracked alongside your singles. <a href="/sealed_template.csv" download>Download the template CSV</a> to add your own.</p>
+          </div>
+          <div id="sealed-table-wrap">
+            <table id="sealed-table" class="data-table">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Type</th>
+                  <th>Set</th>
+                  <th>Qty</th>
+                  <th>Unit Cost</th>
+                  <th>Unit Value</th>
+                  <th>Total Value</th>
+                  <th>P&L</th>
+                  <th>Acquired</th>
+                </tr>
+              </thead>
+              <tbody id="sealed-tbody"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </section>
 

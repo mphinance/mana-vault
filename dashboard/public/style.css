@@ -1421,3 +1421,61 @@ body::before {
   max-height: 640px;
   overflow-y: auto;
 }
+
+/* ═══ Sealed Product View ═══ */
+.breakdown-meta {
+  flex: 1;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+#sealed-table-wrap {
+  max-height: 640px;
+  overflow-y: auto;
+}
+
+.combined-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: 20px 16px;
+}
+
+.combined-part {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 120px;
+}
+
+.combined-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.combined-value {
+  font-family: var(--font-mono);
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.combined-op {
+  font-size: 1.5rem;
+  font-weight: 300;
+  color: var(--text-muted);
+}
+
+.combined-total .combined-value {
+  color: var(--accent);
+  font-size: 1.7rem;
+}
+
+.combined-total .combined-label {
+  color: var(--accent);
+}

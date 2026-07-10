@@ -687,7 +687,162 @@ def build_buylist_margins(card_analytics):
     return margins[:200]
 
 
-def write_output(output_dir, portfolio, card_analytics, movers=None, arbitrage=None, buylist_margins=None):
+def load_sealed(sealed_path=None):
+    """Load sealed product (boxes, bundles, Secret Lairs) from a CSV.
+
+    Sealed product is what other collection trackers ignore — you re-enter it in
+    a second app just to know your true total. This folds it into the same vault.
+
+    The CSV is intentionally forgiving: only ``Product Name`` is required; missing
+    columns default sensibly, and a missing file just yields an empty list so the
+    rest of the pipeline runs unchanged.
+
+    Expected columns (any order, extras ignored):
+      Product Name, Product Type, Set Code, Set Name, Quantity,
+      Purchase Price, Current Value, Acquired Date, Notes
+    """
+    path = sealed_path or os.path.join(DATA_DIR, "Sealed_Products.csv")
+    if not os.path.exists(path):
+        return []
+
+    print("🎁 Loading sealed product...")
+
+    def _num(raw, default=0.0):
+        raw = (raw or "").strip().replace("$", "").replace(",", "")
+        try:
+            return float(raw) if raw else default
+        except ValueError:
+            return default
+
+    items = []
+    with open(path, newline="") as f:
+        for row in csv.DictReader(f):
+            name = (row.get("Product Name") or row.get("Name") or "").strip()
+            if not name:
+                continue
+
+            qty_raw = (row.get("Quantity") or "").strip()
+            try:
+                quantity = int(float(qty_raw)) if qty_raw else 1
+            except ValueError:
+                quantity = 1
+
+            items.append({
+                "product_name": name,
+                "product_type": (row.get("Product Type") or "Other").strip() or "Other",
+                "set_code": (row.get("Set Code") or "").strip(),
+                "set_name": (row.get("Set Name") or "").strip(),
+                "quantity": max(quantity, 0),
+                "purchase_price": _num(row.get("Purchase Price")),
+                "current_value": _num(row.get("Current Value")),
+                "acquired_date": (row.get("Acquired Date") or "").strip(),
+                "notes": (row.get("Notes") or "").strip(),
+            })
+
+    print(f"  Loaded {len(items)} sealed product entries")
+    return items
+
+
+def build_sealed_analytics(sealed_items):
+    """Compute per-item and summary analytics for sealed product.
+
+    Returns ``(summary, analytics)`` where ``summary`` holds ``sealed_*`` totals
+    (folded into ``portfolio.json``) and ``analytics`` is the per-item list
+    written to ``sealed.json``. ``current_value`` is the per-unit market value;
+    for now it is collector-maintained (the price source is still undecided), but
+    the shape is ready to be auto-populated later.
+    """
+    analytics = []
+    total_purchase = 0.0
+    total_current = 0.0
+    type_summary = defaultdict(lambda: {"count": 0, "purchase": 0.0, "current": 0.0})
+
+    for item in sealed_items:
+        qty = item["quantity"]
+        unit_purchase = item["purchase_price"]
+        unit_current = item["current_value"]
+        line_purchase = unit_purchase * qty
+        line_current = unit_current * qty
+        pnl = line_current - line_purchase
+        pnl_pct = ((unit_current / unit_purchase) - 1) * 100 if unit_purchase > 0 else 0
+
+        total_purchase += line_purchase
+        total_current += line_current
+
+        t = item["product_type"] or "Other"
+        type_summary[t]["count"] += qty
+        type_summary[t]["purchase"] += line_purchase
+        type_summary[t]["current"] += line_current
+
+        analytics.append({
+            "product_name": item["product_name"],
+            "product_type": t,
+            "set_code": item["set_code"],
+            "set_name": item["set_name"],
+            "quantity": qty,
+            "purchase_price": round(unit_purchase, 2),
+            "current_value": round(unit_current, 2),
+            "total_purchase": round(line_purchase, 2),
+            "total_current": round(line_current, 2),
+            "pnl": round(pnl, 2),
+            "pnl_pct": round(pnl_pct, 2),
+            "acquired_date": item["acquired_date"],
+            "notes": item["notes"],
+        })
+
+    # Biggest position first, then by name for stable ordering.
+    analytics.sort(key=lambda x: (-x["total_current"], x["product_name"]))
+
+    summary = {
+        "sealed_count": sum(i["quantity"] for i in sealed_items),
+        "sealed_unique": len(sealed_items),
+        "sealed_purchase": round(total_purchase, 2),
+        "sealed_current": round(total_current, 2),
+        "sealed_pnl": round(total_current - total_purchase, 2),
+        "sealed_pnl_pct": round(((total_current / total_purchase) - 1) * 100, 2) if total_purchase > 0 else 0,
+        "sealed_type_summary": {
+            k: {
+                "count": v["count"],
+                "purchase": round(v["purchase"], 2),
+                "current": round(v["current"], 2),
+            }
+            for k, v in type_summary.items()
+        },
+    }
+
+    if sealed_items:
+        print(f"  Sealed: ${total_purchase:,.2f} cost → ${total_current:,.2f} current "
+              f"({summary['sealed_pnl_pct']:.1f}%)")
+
+    return summary, analytics
+
+
+def merge_grand_totals(portfolio, sealed_summary):
+    """Fold sealed totals into the portfolio dict and add combined grand totals.
+
+    This is the one feature that must work: singles + sealed as a single number.
+    Guarded so it degrades to singles-only when there is no sealed product, and
+    to sealed-only when the singles pipeline produced nothing.
+    """
+    singles_current = portfolio.get("total_current", 0) or 0
+    singles_purchase = portfolio.get("total_purchase", 0) or 0
+    sealed_current = sealed_summary.get("sealed_current", 0) or 0
+    sealed_purchase = sealed_summary.get("sealed_purchase", 0) or 0
+
+    grand_current = round(singles_current + sealed_current, 2)
+    grand_purchase = round(singles_purchase + sealed_purchase, 2)
+
+    portfolio.update(sealed_summary)
+    portfolio["grand_total_current"] = grand_current
+    portfolio["grand_total_purchase"] = grand_purchase
+    portfolio["grand_total_pnl"] = round(grand_current - grand_purchase, 2)
+    portfolio["grand_total_pnl_pct"] = (
+        round(((grand_current / grand_purchase) - 1) * 100, 2) if grand_purchase > 0 else 0
+    )
+    return portfolio
+
+
+def write_output(output_dir, portfolio, card_analytics, movers=None, arbitrage=None, buylist_margins=None, sealed=None):
     """Write all output JSON files to the specified directory."""
     print("\n💾 Writing output files...")
     os.makedirs(output_dir, exist_ok=True)
@@ -739,6 +894,11 @@ def write_output(output_dir, portfolio, card_analytics, movers=None, arbitrage=N
             json.dump(buylist_margins, f)
         print(f"  buylist_margins.json: {os.path.getsize(os.path.join(output_dir, 'buylist_margins.json')) / 1024:.0f}KB")
 
+    if sealed is not None:
+        with open(os.path.join(output_dir, "sealed.json"), "w") as f:
+            json.dump(sealed, f)
+        print(f"  sealed.json: {os.path.getsize(os.path.join(output_dir, 'sealed.json')) / 1024:.0f}KB ({len(sealed)} items)")
+
     print(f"\n✅ Preprocessing complete!")
     print(f"   Output: {output_dir}")
     print(f"   Cards with tech indicators: {sum(1 for c in cards_detail.values() if c.get('technicals'))}")
@@ -748,6 +908,8 @@ def main():
     parser = argparse.ArgumentParser(description="Mana Vault — Data Preprocessor")
     parser.add_argument("--csv", help="Path to ManaBox collection CSV (default: ManaBox_Collection.csv)")
     parser.add_argument("--output", help="Output directory for JSON files (default: dashboard/public/data/)")
+    parser.add_argument("--sealed", help="Path to sealed product CSV (default: Sealed_Products.csv, "
+                                         "or sealed.csv next to --csv in per-user mode)")
     args = parser.parse_args()
     
     output_dir = args.output or OUTPUT_DIR
@@ -766,12 +928,24 @@ def main():
     arbitrage = find_arbitrage(card_analytics)
     buylist_margins = build_buylist_margins(card_analytics)
 
+    # Sealed product — folded into the same portfolio so the total is ONE number
+    # (singles + sealed). In per-user mode, look for sealed.csv next to the
+    # collection CSV; otherwise use the default Sealed_Products.csv.
+    sealed_path = args.sealed
+    if sealed_path is None and per_user:
+        candidate = os.path.join(os.path.dirname(os.path.abspath(args.csv)), "sealed.csv")
+        sealed_path = candidate if os.path.exists(candidate) else None
+    sealed_items = load_sealed(sealed_path)
+    sealed_summary, sealed_analytics = build_sealed_analytics(sealed_items)
+    merge_grand_totals(portfolio, sealed_summary)
+
     # Movers only in default mode (they're global, not per-user)
     movers = None
     if not per_user:
         movers = parse_mtgstocks_movers(cards)
 
-    write_output(output_dir, portfolio, card_analytics, movers=movers, arbitrage=arbitrage, buylist_margins=buylist_margins)
+    write_output(output_dir, portfolio, card_analytics, movers=movers, arbitrage=arbitrage,
+                 buylist_margins=buylist_margins, sealed=sealed_analytics)
 
 
 if __name__ == "__main__":

@@ -233,7 +233,11 @@ async def list_vaults():
             try:
                 with open(portfolio_path) as f:
                     portfolio = json.load(f)
-                total_value = portfolio.get("total_current")
+                # Prefer the combined singles + sealed total when present; fall
+                # back to the singles-only total for older vaults.
+                total_value = portfolio.get("grand_total_current")
+                if total_value is None:
+                    total_value = portfolio.get("total_current")
                 if total_value is not None:
                     vault["total_value"] = total_value
             except (FileNotFoundError, ValueError, OSError):
